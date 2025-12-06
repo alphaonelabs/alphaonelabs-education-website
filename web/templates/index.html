@@ -41,8 +41,16 @@
             understanding is always within reach.
           </p>
         </div>
-        <!-- Featured Courses (3 across) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <!-- Recent Courses (2 columns x 3 rows) -->
+        <div class="relative flex py-5 items-center mb-6">
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <div class="flex-shrink mx-4 flex items-center text-xl font-bold text-gray-800 dark:text-gray-200">
+            <i class="fas fa-graduation-cap text-teal-300 dark:text-teal-300 mr-3"></i>
+            Recent Courses
+          </div>
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <!-- Course Card 1 -->
           {% for course in featured_courses %}
             <!-- Course Card -->
@@ -162,7 +170,7 @@
               {% endif %}
             </div>
           {% empty %}
-            <p>No featured courses available.</p>
+            <p>No courses available.</p>
           {% endfor %}
         </div>
         <!-- Add view more link -->
@@ -173,126 +181,36 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
-        <!-- Quiz Banner -->
-        <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
-          <div class="flex flex-col md:flex-row">
-            <div class="p-4 md:p-5 md:w-2/3 text-white">
-              <h2 class="text-sm md:text-base font-semibold mb-1">Test Your Knowledge with Our Quizzes!</h2>
-              <p class="mb-3 text-blue-100 text-xs md:text-sm">
-                Challenge yourself with our interactive quizzes. Perfect for testing your understanding.
-              </p>
-              <div class="flex flex-wrap gap-2">
-                <a href="{% url 'quiz_list' %}"
-                   class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition duration-200 inline-flex items-center">
-                  <i class="fas fa-puzzle-piece mr-1.5"></i> Browse Quizzes
-                </a>
-                {% if user.is_authenticated %}
-                  <a href="{% url 'create_quiz' %}"
-                     class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-md text-xs font-medium transition duration-200 inline-flex items-center">
-                    <i class="fas fa-plus mr-1.5"></i> Create Quiz
-                  </a>
-                {% endif %}
-              </div>
-            </div>
-            <div class="hidden md:block md:w-1/3 relative">
-              <div class="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-80"
-                   style="background-image: url('{% static "images/quiz-illustration.svg" %}')"></div>
-            </div>
-          </div>
-          <div class="bg-blue-700/30 py-1.5 px-4">
-            <div class="flex flex-wrap items-center justify-between text-xs text-white">
-              <div class="flex items-center mb-1 md:mb-0">
-                <i class="fas fa-chart-line mr-1"></i>
-                <span>Track progress</span>
-              </div>
-              <div class="flex items-center mb-1 md:mb-0">
-                <i class="fas fa-medal mr-1"></i>
-                <span>Earn badges</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-share-alt mr-1"></i>
-                <span>Share results</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Peer Challenges Section -->
-        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
-          <div class="flex flex-col md:flex-row">
-            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
-              <div class="relative z-10">
-                <div class="flex items-center mb-1">
-                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
-                </div>
-                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
-                <p class="mb-3 text-pink-100 text-sm">
-                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <a href="{% url 'challenge_list' %}"
-                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
-                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
-                  </a>
-                  {% if user.is_authenticated %}
-                    <a href="{% url 'create_challenge' %}"
-                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
-                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
-                    </a>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
-              <!-- Single Challenge Card visual -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
-                  <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
-                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
-                  </div>
-                  <div class="text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center">
-                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-purple-700/30 py-1.5 px-4">
-            <div class="flex flex-wrap items-center justify-between text-xs text-white">
-              <div class="flex items-center">
-                <i class="fas fa-users mr-1"></i>
-                <span>Challenge friends</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-crown mr-1"></i>
-                <span>Compete</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-chart-bar mr-1"></i>
-                <span>Track results</span>
-              </div>
-            </div>
-          </div>
-        </div>
         <!-- Featured Products Section -->
+        <div class="relative flex py-5 items-center mb-6">
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <div class="flex-shrink mx-4 flex items-center text-xl font-bold text-gray-800 dark:text-gray-200">
+            <i class="fas fa-shopping-bag text-teal-300 dark:text-teal-300 mr-3"></i>
+            Featured Goods
+            <i class="fas fa-gift text-orange-400 ml-2"></i>
+          </div>
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {% for product in featured_products %}
             <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <!-- Product Image -->
               <div class="relative aspect-square w-full overflow-hidden">
-                {% if product.image %}
+                {% if product.image_url %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{{ product.image.url }}"
+                    <img src="{{ product.image_url }}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                         width="300"
+                         height="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                         width="300"
+                         height="300" />
                   </a>
                 {% endif %}
               </div>
@@ -347,32 +265,6 @@
             <span>View More Products</span>
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
-        </div>
-        <!-- GSoC Announcement -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <div class="hidden sm:block">
-                <img src="{% static 'images/gsoc-logo.png' %}"
-                     alt="Google Summer of Code"
-                     class="h-16 w-16 object-contain"
-                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
-                     height="64"
-                     width="64" />
-              </div>
-              <div>
-                <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
-                <p class="text-blue-100">
-                  Alpha One Labs has applied to participate in this year's Google Summer of Code. Check out our project ideas and get involved!
-                </p>
-              </div>
-            </div>
-            <a href="{% url 'gsoc_landing_page' %}"
-               class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
-              <span>Get Started with GSoC</span>
-              <i class="fas fa-arrow-right ml-2"></i>
-            </a>
-          </div>
         </div>
         <!-- Two cards next to each other: For Learners & For Teachers -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -435,110 +327,6 @@
             </ul>
           </div>
         </div>
-        {% if user.is_authenticated %}
-          <!-- Team Collaboration Section -->
-          <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mt-8">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
-              <a href="{% url 'team_goals' %}"
-                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
-                <span>View All</span>
-                <i class="fas fa-arrow-right ml-2"></i>
-              </a>
-            </div>
-            {% if user.is_authenticated %}
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- My Team Goals -->
-                <div class="space-y-4">
-                  <h3 class="text-lg font-semibold text-white">My Team Goals</h3>
-                  {% if user_team_goals %}
-                    <div class="space-y-3">
-                      {% for goal in user_team_goals|slice:":3" %}
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
-                          <h4 class="font-medium text-white">{{ goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">{{ goal.description|truncatechars:100 }}</p>
-                          {% if goal.deadline %}
-                            <div class="text-sm text-gray-200 mt-2">
-                              <i class="fas fa-calendar-alt mr-1"></i>
-                              {% load i18n %}
-
-                              <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
-                              {% if goal.deadline < now %}
-                                <span class="text-red-300 ml-1">({% trans "Overdue" %})</span>
-                              {% else %}
-                                <span class="text-gray-300 ml-1">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
-                              {% endif %}
-                            </div>
-                          {% endif %}
-                          <div class="flex items-center justify-between mt-3">
-                            <span class="text-sm text-gray-200">
-                              <i class="fas fa-users mr-1"></i>
-                              {{ goal.members.count }} members
-                            </span>
-                            <a href="{% url 'team_goal_detail' goal.id %}"
-                               class="text-white hover:text-gray-200 text-sm">View Details</a>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <p class="text-gray-200">You haven't created or joined any team goals yet.</p>
-                  {% endif %}
-                  <a href="{% url 'create_team_goal' %}"
-                     class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create New Team Goal
-                  </a>
-                </div>
-                <!-- Team Invitations -->
-                <div class="space-y-4">
-                  <h3 class="text-lg font-semibold text-white">Team Invitations</h3>
-                  {% if team_invites %}
-                    <div class="space-y-3">
-                      {% for invite in team_invites|slice:":3" %}
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
-                          <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.username }}</p>
-                          <div class="flex items-center space-x-2 mt-3">
-                            <form method="post"
-                                  action="{% url 'accept_team_invite' invite.id %}"
-                                  class="inline">
-                              {% csrf_token %}
-                              <button type="submit"
-                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-200">
-                                Accept
-                              </button>
-                            </form>
-                            <form method="post"
-                                  action="{% url 'decline_team_invite' invite.id %}"
-                                  class="inline">
-                              {% csrf_token %}
-                              <button type="submit"
-                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-200">
-                                Decline
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <p class="text-gray-200">You have no pending team invitations.</p>
-                  {% endif %}
-                </div>
-              </div>
-            {% else %}
-              <div class="text-center py-8">
-                <p class="text-gray-200 mb-4">Sign in to create or join team goals and collaborate with others!</p>
-                <a href="{% url 'login' %}"
-                   class="inline-flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
-                  <i class="fas fa-sign-in-alt mr-2"></i>
-                  Sign In to Get Started
-                </a>
-              </div>
-            {% endif %}
-          </div>
-        {% endif %}
         <!-- Affiliations Section -->
         <div class="border border-gradient-to-r from-purple-500 to-pink-400 p-1 rounded-md shadow-md mb-4 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <h2 class="text-xl font-semibold flex items-center mb-4">
@@ -728,6 +516,109 @@
             </a>
           </div>
         </div>
+        <!-- Referral Program -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-gift text-purple-600 dark:text-purple-400 mr-2"></i>
+            Referral Program
+          </h2>
+          <div class="space-y-4">
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg p-4 border border-purple-100 dark:border-purple-800">
+              <h3 class="font-medium mb-2 text-purple-800 dark:text-purple-200">Share and Earn!</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                {% if user.is_authenticated %}
+                  {% if user.profile.is_teacher %}
+                    Get your first student and receive a $5 bonus! Share your unique referral link:
+                  {% else %}
+                    Get $5 when someone you refer enrolls in their first course! Share your unique referral link:
+                  {% endif %}
+                {% else %}
+                  Join our community and start earning rewards through our referral program!
+                {% endif %}
+              </p>
+              {% if user.is_authenticated %}
+                <div class="flex items-center space-x-2">
+                  <input type="text"
+                         value="{{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' code=user.profile.referral_code %}"
+                         class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 flex-1"
+                         readonly
+                         id="referralLink" />
+                  <button onclick="copyReferralLink()"
+                          class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-sm">
+                    <i class="fas fa-copy mr-1"></i>
+                    Copy
+                  </button>
+                </div>
+                <div class="mt-4 flex items-center justify-between">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Your total referral earnings: ${{ user.profile.referral_earnings|default:"0" }}
+                  </p>
+                </div>
+              {% else %}
+                <a href="{% url 'account_signup' %}"
+                   class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
+                  <i class="fas fa-user-plus mr-2"></i>
+                  Sign Up to Start Earning
+                </a>
+              {% endif %}
+              <!-- Mini Leaderboard -->
+              <div class="mt-4 border-t border-purple-100 dark:border-purple-800 pt-4">
+                <h4 class="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-3">
+                  <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                  Top Referral Activity
+                </h4>
+                <div class="space-y-2">
+                  {% for referrer in top_referrers %}
+                    <div class="flex items-center justify-between text-sm {% if forloop.counter == 1 %}text-yellow-600 dark:text-yellow-400 font-medium{% endif %}">
+                      <div class="flex items-center space-x-2">
+                        <span class="w-5 text-center">
+                          {% if forloop.counter == 1 %}
+                            👑
+                          {% elif forloop.counter == 2 %}
+                            🥈
+                          {% elif forloop.counter == 3 %}
+                            🥉
+                          {% else %}
+                            {{ forloop.counter }}
+                          {% endif %}
+                        </span>
+                        <span>{{ referrer.user.username }}</span>
+                      </div>
+                      <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                        <span title="Signups"><i class="fas fa-user-plus mr-1"></i>{{ referrer.total_signups }}</span>
+                        <span title="Enrollments"><i class="fas fa-graduation-cap mr-1"></i>{{ referrer.total_enrollments }}</span>
+                        <span title="Clicks"><i class="fas fa-mouse-pointer mr-1"></i>{{ referrer.total_clicks }}</span>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                      No referral activity yet. Share your link to be the first!
+                    </p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <script>
+              function copyReferralLink() {
+                  const linkInput = document.getElementById('referralLink');
+                  linkInput.select();
+                  document.execCommand('copy');
+
+                  // Show a temporary success message
+                  const button = event.target.closest('button');
+                  const originalText = button.innerHTML;
+                  button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                  button.classList.add('bg-green-600');
+
+                  setTimeout(() => {
+                      button.innerHTML = originalText;
+                      button.classList.remove('bg-green-600');
+                  }, 2000);
+              }
+          </script>
+        </div>
         <!-- Weekly Challenge -->
         <div class="container mx-auto px-4 py-8">
           <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
@@ -760,20 +651,74 @@
         </div>
         <!-- Educational Videos -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
-          <h2 class="text-xl font-semibold flex items-center">
-            <span class="mr-2">🎬</span> Educational Videos
+          <h2 class="text-xl font-semibold flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="mr-2">🎬</span> Educational Videos
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <i class="fas fa-video mr-1"></i>
+              <span>{{ video_count|default:"0" }} videos</span>
+            </div>
           </h2>
-          <div class="col-span-full text-center">
-            <div class="pt-6 text-center">
+          <div class="col-span-full">
+            <div class="pt-4 text-center">
               <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg mx-auto">
                 Discover a wide range of educational videos shared by our community of teachers and learners.
                 From science and technology to arts and languages, find videos that help you learn new skills and concepts.
               </p>
-              <div class="mt-4 flex gap-4">
+              <!-- Quick‑Add YouTube Video (visible to everyone) -->
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4 max-w-lg mx-auto">
+                <h3 class="text-sm font-semibold mb-2 text-left">Quick Add YouTube Video</h3>
+                <form id="quick-video-form"
+                      action="{% url 'upload_educational_video' %}"
+                      method="post"
+                      class="flex flex-col gap-3">
+                  {% csrf_token %}
+                  <!-- Video URL + fetch‑title button -->
+                  <div class="flex gap-2">
+                    <input type="url"
+                           id="video-url"
+                           name="video_url"
+                           placeholder="Paste YouTube URL here"
+                           required
+                           class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500" />
+                    <button type="button"
+                            id="fetch-title-btn"
+                            class="bg-teal-300 hover:bg-teal-400 text-white px-3 py-2 rounded-lg transition">
+                      <i class="fas fa-search"></i>
+                    </button>
+                  </div>
+                  <!-- Auto‑filled Title -->
+                  <input type="text"
+                         id="video-title"
+                         name="title"
+                         placeholder="Video title "
+                         class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                  <!-- Hidden description (filled by JS) -->
+                  <input type="hidden" id="video-description" name="description" value="" />
+                  <!-- Category + submit -->
+                  <div class="flex gap-2">
+                    <select id="video-category"
+                            name="category"
+                            required
+                            class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select a category</option>
+                      {% for subject in subjects %}<option value="{{ subject.id }}">{{ subject.name }}</option>{% endfor %}
+                    </select>
+                    <button type="submit"
+                            class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
+                      <i class="fas fa-plus mr-2"></i> Add
+                    </button>
+                  </div>
+                  <!-- Feedback message -->
+                  <div id="quick-add-message" class="text-sm hidden"></div>
+                </form>
+              </div>
+              <div class="mt-4 flex justify-center gap-4">
                 {% if user.is_authenticated %}
                   <a href="{% url 'upload_educational_video' %}"
                      class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-                    <i class="fas fa-upload mr-2"></i> Share
+                    <i class="fas fa-upload mr-2"></i> Upload
                   </a>
                 {% endif %}
                 <a href="{% url 'educational_videos_list' %}"
@@ -828,6 +773,45 @@
               <i class="fas fa-plus mr-1"></i> Share Your Story
             </a>
           </div>
+        </div>
+        <div class="grid grid-cols-1  gap-4">
+          {% for request in latest_waiting_room_requests %}
+            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200">
+              <h3 class="text-lg font-medium mb-2">{{ request.title }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                Created by <span class="font-semibold">{{ request.creator.username }}</span>
+              </p>
+              <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+                <span class="mr-3">
+                  <i class="fa-solid fa-book mr-1"></i>
+                  {{ request.subject }}
+                </span>
+                <span>
+                  <i class="fa-solid fa-clock mr-1"></i>
+                  {{ request.created_at|date:"M d, Y" }}
+                </span>
+              </div>
+              <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">{{ request.description|truncatechars:120 }}</p>
+              <div class="flex flex-wrap gap-2 mb-3">
+                {% for topic in request.topics.split|slice:":3" %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                    {{ topic }}
+                  </span>
+                {% endfor %}
+              </div>
+              <div class="mt-2">
+                <a href="{% url 'waiting_room_detail' request.id %}"
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  View Details
+                  <i class="fa-solid fa-arrow-right ml-2"></i>
+                </a>
+              </div>
+            </div>
+          {% empty %}
+            <div class="col-span-full text-center py-4">
+              <p class="text-sm text-gray-600 dark:text-gray-400">No waiting room requests available at this time.</p>
+            </div>
+          {% endfor %}
         </div>
         <!-- GitHub Contributors Section (Now in sidebar) -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
@@ -896,8 +880,7 @@
             </div>
           </div>
           <div class="text-center">
-            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
-               target="_blank"
+            <a href="{% url 'contributors_list_view' %}"
                class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
               <i class="fas fa-users mr-1"></i>
               View All Contributors
@@ -1038,7 +1021,7 @@
                           </div>
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
-                                  <a href="/contributors/${contributor.username}/" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                  <a href="${window.location.pathname.split('/')[1]}/contributors/${contributor.username}/" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
                                      ${contributor.username || 'Unknown Contributor'}
                                   </a>
                                   <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
@@ -1294,3 +1277,100 @@
       });
   </script>
 {% endblock content %}
+{% block extra_js %}
+  {{ block.super }}
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          const form = document.getElementById("quick-video-form");
+          const urlIn = document.getElementById("video-url");
+          const titleIn = document.getElementById("video-title");
+          const descIn = document.getElementById("video-description");
+          const catSelect = document.getElementById("video-category");
+          const fetchBtn = document.getElementById("fetch-title-btn");
+          const msgDiv = document.getElementById("quick-add-message");
+          const submitBtn = form.querySelector("button[type='submit']");
+
+          function showMessage(text, type) {
+              msgDiv.textContent = text;
+              msgDiv.className = type === "success" ?
+                  "text-green-600 dark:text-green-400" :
+                  "text-red-600 dark:text-red-400";
+              msgDiv.classList.remove("hidden");
+              setTimeout(() => msgDiv.classList.add("hidden"), 5000);
+          }
+
+          // 1) Fetch via oEmbed (YouTube or Vimeo)
+          fetchBtn.addEventListener("click", async () => {
+              const url = urlIn.value.trim();
+              let endpoint = null;
+
+              // YouTube ID
+              const yt = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);
+              if (yt) {
+                  endpoint = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${yt[1]}&format=json`;
+              }
+              // Vimeo numeric ID
+              const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+              if (!endpoint && vm) {
+                  endpoint = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`;
+              }
+              if (!endpoint) {
+                  return showMessage("Enter a valid YouTube or Vimeo link", "error");
+              }
+
+              try {
+                  const r = await fetch(endpoint);
+                  if (!r.ok) throw new Error();
+                  const data = await r.json();
+                  titleIn.value = data.title || "";
+                  descIn.value = data.description || data.title || "";
+                  showMessage("Info fetched!", "success");
+              } catch {
+                  showMessage("Failed to fetch video info", "error");
+              }
+          });
+
+          // 2+3) On submit: require category, auto-fetch title if blank, then AJAX POST
+          form.addEventListener("submit", async e => {
+              e.preventDefault();
+
+              if (!catSelect.value) {
+                  return showMessage("Please select a category", "error");
+              }
+
+              // if title still empty, trigger our fetch‑button & wait a brief moment
+              if (!titleIn.value.trim()) {
+                  fetchBtn.click();
+                  await new Promise(r => setTimeout(r, 600));
+              }
+
+              const orig = submitBtn.innerHTML;
+              submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding…';
+              submitBtn.disabled = true;
+
+              try {
+                  const resp = await fetch(form.action, {
+                      method: form.method,
+                      credentials: "same-origin",
+                      headers: {
+                          "X-Requested-With": "XMLHttpRequest"
+                      },
+                      body: new FormData(form),
+                  });
+                  const data = await resp.json();
+                  if (resp.ok && data.success) {
+                      form.reset();
+                      showMessage(data.message || "Added!", "success");
+                  } else {
+                      showMessage(data.error || "Add failed", "error");
+                  }
+              } catch {
+                  showMessage("Network error—try again", "error");
+              } finally {
+                  submitBtn.innerHTML = orig;
+                  submitBtn.disabled = false;
+              }
+          });
+      });
+  </script>
+{% endblock %}

@@ -124,65 +124,66 @@
         </div>
       </div>
     </div>
-  </div>
-  <!-- Learning Streak Summary Section -->
-  <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Learning Streak</h2>
-    {% if streak %}
-      <p class="text-gray-700 dark:text-gray-300">
-        Current Streak: <span class="font-bold">{{ streak.current_streak }}</span> day{{ streak.current_streak|pluralize }}
+    <!-- Additional Sections (Learning Streak, Achievements, Certificates) -->
+    <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Learning Streak</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        <i class="fas fa-fire-alt text-orange-500 mr-2"></i> Learning streaks track your consecutive days of activity. Stay consistent to build your streak!
       </p>
-      <p class="text-gray-700 dark:text-gray-300">
-        Longest Streak: <span class="font-bold">{{ streak.longest_streak }}</span> day{{ streak.longest_streak|pluralize }}
-      </p>
-    {% else %}
-      <p class="text-gray-700 dark:text-gray-300">No streak information available.</p>
-    {% endif %}
-    <a href="{% url 'streak_detail' %}"
-       class="inline-block mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded">
-      View Detailed Streak Info
-    </a>
-  </div>
-  <!-- Achievements Section -->
-  <section class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-    <h2 class="text-xl font-semibold mb-4">Your Achievements</h2>
-    {% if achievements %}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for achievement in achievements %}
-          {% if achievement.badge_type == 'nft' %}
-            <!-- NFT Badge Style -->
-            <div class="relative border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-lg p-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
-              <!-- NFT Badge Label -->
-              <span class="absolute top-2 right-2 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-lg shadow">
-                NFT Badge
-              </span>
-              <div class="text-lg font-semibold">{{ achievement.title }}</div>
-              <p class="text-sm opacity-80">{{ achievement.description }}</p>
-              <p class="text-xs mt-1">Awarded on {{ achievement.awarded_at|date:"M d, Y" }}</p>
-              <button onclick="window.location.href='{% url 'achievement_detail' achievement.id %}'"
-                      class="mt-2 px-4 py-1 text-xs font-semibold bg-white text-indigo-600 rounded-lg shadow hover:bg-gray-200 transition duration-200">
-                View Badge
-              </button>
-            </div>
-          {% else %}
-            <!-- Default Badge Style -->
-            <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
-              {% if achievement.badge_icon %}
-                <i class="{{ achievement.badge_icon }} text-4xl text-orange-500"></i>
-              {% else %}
-                <i class="fas fa-trophy text-4xl text-orange-500"></i>
-              {% endif %}
-              <h3 class="mt-2 text-lg font-semibold">{{ achievement.title }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-300">{{ achievement.description }}</p>
-              <p class="text-xs text-gray-500">Awarded on {{ achievement.awarded_at|date:"M d, Y" }}</p>
-              <a href="https://twitter.com/intent/tweet?text=I%20earned%20the%20badge%20'{{ achievement.title|urlencode }}'%20on%20AlphaOneLabs!&url={{ request.build_absolute_uri|urlencode }}"
-                 target="_blank"
-                 class="mt-2 inline-block px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">
-                Share on Twitter
-              </a>
-            </div>
-          {% endif %}
-        {% endfor %}
+      {% if streak %}
+        <p class="text-gray-700 dark:text-gray-300">
+          Current Streak: <span class="font-bold">{{ streak.current_streak }}</span> day{{ streak.current_streak|pluralize }}
+        </p>
+        <p class="text-gray-700 dark:text-gray-300">
+          Longest Streak: <span class="font-bold">{{ streak.longest_streak }}</span> day{{ streak.longest_streak|pluralize }}
+        </p>
+      {% else %}
+        <p class="text-gray-700 dark:text-gray-300">No streak information available.</p>
+      {% endif %}
+      <a href="{% url 'streak_detail' %}"
+         class="inline-block mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded">
+        View Detailed Streak Info
+      </a>
+    </div>
+    <section class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Your Achievements</h2>
+      {% if achievements %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for achievement in achievements %}
+            {% if achievement.badge_type == 'nft' %}
+              <!-- NFT Badge Style -->
+              <div class="relative border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-lg p-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+                <!-- NFT Badge Label -->
+                <span class="absolute top-2 right-2 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-lg shadow">
+                  NFT Badge
+                </span>
+                <div class="text-lg font-semibold">{{ achievement.title }}</div>
+                <p class="text-sm opacity-80">{{ achievement.description }}</p>
+                <p class="text-xs mt-1">Awarded on {{ achievement.awarded_at|date:"M d, Y" }}</p>
+                <button onclick="window.location.href='{% url 'achievement_detail' achievement.id %}'"
+                        class="mt-2 px-4 py-1 text-xs font-semibold bg-white text-indigo-600 rounded-lg shadow hover:bg-gray-200 transition duration-200">
+                  View Badge
+                </button>
+              </div>
+            {% else %}
+              <!-- Default Badge Style -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
+                {% if achievement.badge_icon %}
+                  <i class="{{ achievement.badge_icon }} text-4xl text-orange-500"></i>
+                {% else %}
+                  <i class="fas fa-trophy text-4xl text-orange-500"></i>
+                {% endif %}
+                <h3 class="mt-2 text-lg font-semibold">{{ achievement.title }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-300">{{ achievement.description }}</p>
+                <p class="text-xs text-gray-500">Awarded on {{ achievement.awarded_at|date:"M d, Y" }}</p>
+                <a href="https://twitter.com/intent/tweet?text=I%20earned%20the%20badge%20'{{ achievement.title|urlencode }}'%20on%20AlphaOneLabs!&url={{ request.build_absolute_uri|urlencode }}"
+                   target="_blank"
+                   class="mt-2 inline-block px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">
+                  Share on Twitter
+                </a>
+              </div>
+            {% endif %}
+          {% endfor %}
       </div>
     {% else %}
       <p class="text-gray-600 dark:text-gray-300">You haven't earned any achievements yet. Keep learning!</p>
@@ -223,5 +224,4 @@
       {% endfor %}
     </div>
   </div>
-</div>
-{% endblock %}
+{% endblock content %}

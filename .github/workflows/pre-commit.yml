@@ -2,6 +2,8 @@ name: Pre-commit fix
 
 on:
   workflow_dispatch:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -9,21 +11,43 @@ permissions:
 
 jobs:
   run-pre-commit:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request == null  # Prevent running on PRs from forks
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check if copilot branch
+        id: check_copilot
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+            if [[ "$BRANCH_NAME" == copilot/* ]]; then
+              echo "is_copilot=true" >> $GITHUB_OUTPUT
+              echo "Branch $BRANCH_NAME is a copilot branch"
+            else
+              echo "is_copilot=false" >> $GITHUB_OUTPUT
+              echo "Branch $BRANCH_NAME is not a copilot branch, skipping"
+            fi
+          else
+            # For workflow_dispatch, always run
+            echo "is_copilot=true" >> $GITHUB_OUTPUT
+            echo "Manual workflow dispatch, running"
+          fi
+
       - name: Checkout code
+        if: steps.check_copilot.outputs.is_copilot == 'true'
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || github.ref_name }}
+          repository: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
+        if: steps.check_copilot.outputs.is_copilot == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install pre-commit
+        if: steps.check_copilot.outputs.is_copilot == 'true'
         run: |
           python -m venv venv
           . venv/bin/activate
@@ -31,12 +55,14 @@ jobs:
           pip install pre-commit
 
       - name: Run pre-commit
+        if: steps.check_copilot.outputs.is_copilot == 'true'
         run: |
           . venv/bin/activate
           pre-commit run --all-files
         continue-on-error: true
 
       - name: Check for changes
+        if: steps.check_copilot.outputs.is_copilot == 'true'
         id: check_changes
         run: |
           if [ -n "$(git status --porcelain)" ]; then
@@ -48,10 +74,11 @@ jobs:
           fi
 
       - name: Commit and push changes
-        if: env.changes_detected == 'true'
+        if: steps.check_copilot.outputs.is_copilot == 'true' && env.changes_detected == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "Apply pre-commit fixes"
-          git push origin HEAD:${{ github.ref_name }}
+          PUSH_REF="${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || github.ref_name }}"
+          git push origin "HEAD:$PUSH_REF"

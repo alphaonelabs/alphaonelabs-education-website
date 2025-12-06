@@ -5,6 +5,27 @@
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-2 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-6"
+         aria-label="Breadcrumb">
+      <ol class="flex items-center space-x-2">
+        <li>
+          <a href="{% url 'index' %}"
+             class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+            <i class="fas fa-home mr-1"></i> Home
+          </a>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-4 w-4 text-gray-400"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <span class="ml-2 text-gray-800 dark:text-gray-300 font-medium">Marketplace</span>
+        </li>
+      </ol>
+    </nav>
     <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">Explore Our Products</h1>
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Filter Sidebar -->
@@ -73,10 +94,22 @@
                class="block overflow-hidden rounded-md">
               <img src="{% if product.image_url %}{{ product.image_url }}{% else %}/static/images/placeholder.png{% endif %}"
                    alt="{{ product.name }}"
-                   class="w-full h-56 object-cover rounded-md" />
+                   class="w-full h-56 object-cover rounded-md"
+                   width="300"
+                   height="224" />
             </a>
             <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ product.name }}</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">{{ product.description|truncatewords:10 }}</p>
+            <!-- Store info badge -->
+            <div class="mt-2 flex items-center">
+              <i class="fas fa-store text-teal-600 dark:text-teal-400 mr-1 text-xs"></i>
+              {% if product.storefront %}
+                <a href="{% url 'storefront_detail' store_slug=product.storefront.store_slug %}"
+                   class="text-xs inline-block bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-300 px-2 py-1 rounded-full hover:bg-teal-200 dark:hover:bg-teal-800 transition-colors">
+                  {{ product.storefront.name }}
+                </a>
+              {% endif %}
+            </div>
             <div class="mt-2">
               {% if product.discount_price %}
                 <p class="text-sm text-gray-500 line-through">${{ product.price }}</p>
@@ -85,6 +118,13 @@
                 <p class="text-xl font-bold text-gray-900 dark:text-white">${{ product.price }}</p>
               {% endif %}
             </div>
+            <!-- Cart count badge -->
+            {% if product.cart_items.count > 0 %}
+              <div class="mt-2 inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-shopping-cart mr-1"></i>
+                <span>{{ product.cart_items.count }} in carts</span>
+              </div>
+            {% endif %}
             <div class="mt-3">
               {% if product.stock > 0 %}
                 <form method="post" action="{% url 'add_goods_to_cart' product.pk %}">

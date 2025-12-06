@@ -3,7 +3,9 @@ import random
 import string
 import time
 import uuid
+from datetime import datetime, timedelta
 from io import BytesIO
+from urllib.parse import parse_qs, urlparse
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -13,6 +15,7 @@ from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Avg
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -317,6 +320,11 @@ class Course(models.Model):
 
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
@@ -326,10 +334,8 @@ class Course(models.Model):
 
     @property
     def average_rating(self):
-        reviews = self.reviews.all()
-        if not reviews:
-            return 0
-        return sum(review.rating for review in reviews) / len(reviews)
+        avg = float(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0)
+        return round(avg, 2)
 
 
 class Session(models.Model):
@@ -665,10 +671,17 @@ class EducationalVideo(models.Model):
     """Model for educational videos shared by users."""
 
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(blank=True, help_text="Optional - describe what viewers will learn from this video")
     video_url = models.URLField(help_text="URL for external content like YouTube videos")
     category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
-    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploader = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="educational_videos",
+        null=True,
+        blank=True,
+        help_text="User who uploaded the video. If null, the submission is considered anonymous.",
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -678,6 +691,39 @@ class EducationalVideo(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def thumbnail_url(self):
+        """
+        Build the URL for YouTube’s high-quality default thumbnail.
+        Returns None if this isn’t a YouTube video.
+        """
+        vid = self.youtube_id
+        if vid:
+            return f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+        return None
+
+    @property
+    def youtube_id(self):
+        """
+        Extract the YouTube video ID, whether it's a long or short URL.
+        Returns None if not a YouTube link.
+        """
+        parsed = urlparse(self.video_url)
+        host = parsed.netloc.lower()
+
+        # youtu.be/<id>
+        if host in ("youtu.be", "www.youtu.be"):
+            return parsed.path.lstrip("/")
+
+        # youtube.com/watch?v=<id>
+        if host in ("youtube.com", "www.youtube.com"):
+            try:
+                return parse_qs(parsed.query).get("v", [None])[0]
+            except Exception:
+                return None
+
+        return None
 
 
 class Achievement(models.Model):
@@ -806,9 +852,34 @@ class ForumTopic(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="forum_topics")
     is_pinned = models.BooleanField(default=False)
     is_locked = models.BooleanField(default=False)
+    github_issue_url = models.URLField(blank=True, default="", help_text="Link to related GitHub issue")
+    github_milestone_url = models.URLField(blank=True, default="", help_text="Link to related GitHub milestone")
     views = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Add these methods to the ForumTopic class
+    def upvote_count(self):
+        """Return the number of upvotes for this topic."""
+        return self.votes.filter(vote_type="up").count()
+
+    def downvote_count(self):
+        """Return the number of downvotes for this topic."""
+        return self.votes.filter(vote_type="down").count()
+
+    def vote_score(self):
+        """Return the total vote score (upvotes - downvotes)."""
+        return self.upvote_count() - self.downvote_count()
+
+    def user_vote(self, user):
+        """Return the user's vote type for this topic, or None if not voted."""
+        if not user.is_authenticated:
+            return None
+        try:
+            vote = self.votes.get(user=user)
+            return vote.vote_type
+        except ForumVote.DoesNotExist:
+            return None
 
     class Meta:
         ordering = ["-is_pinned", "-created_at"]
@@ -826,6 +897,29 @@ class ForumReply(models.Model):
     is_solution = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Add the same methods to the ForumReply class
+    def upvote_count(self):
+        """Return the number of upvotes for this reply."""
+        return self.votes.filter(vote_type="up").count()
+
+    def downvote_count(self):
+        """Return the number of downvotes for this reply."""
+        return self.votes.filter(vote_type="down").count()
+
+    def vote_score(self):
+        """Return the total vote score (upvotes - downvotes)."""
+        return self.upvote_count() - self.downvote_count()
+
+    def user_vote(self, user):
+        """Return the user's vote type for this reply, or None if not voted."""
+        if not user.is_authenticated:
+            return None
+        try:
+            vote = self.votes.get(user=user)
+            return vote.vote_type
+        except ForumVote.DoesNotExist:
+            return None
 
     class Meta:
         verbose_name_plural = "Forum Replies"
@@ -864,7 +958,10 @@ class PeerMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
+    encrypted_key = models.TextField(blank=True, default="")  # Using default empty string instead of null
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    starred = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -872,6 +969,13 @@ class PeerMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
+
+    def save(self, *args, **kwargs):
+        if self.read_at and not self.is_read:
+            self.is_read = True
+        elif self.is_read and not self.read_at:
+            self.read_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class StudyGroup(models.Model):
@@ -2270,25 +2374,83 @@ class NFTBadge(models.Model):
 
 
 class WaitingRoom(models.Model):
-    """Model for storing waiting room requests for courses on specific subjects."""
+    """Model for storing waiting room requests.
+
+    Can be used for two purposes:
+    1. Waiting for a new course to be created on a subject/topic (creator, title, subject, topics are set)
+    2. Waiting for the next session of an existing course (course is set)
+    """
 
     STATUS_CHOICES = [("open", "Open"), ("closed", "Closed"), ("fulfilled", "Fulfilled")]
 
-    title = models.CharField(max_length=200)
+    # For waiting for new courses
+    title = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
-    subject = models.CharField(max_length=100)
-    topics = models.TextField(help_text="Comma-separated list of topics")
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_waiting_rooms")
-    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    subject = models.CharField(max_length=100, blank=True)
+    topics = models.TextField(help_text="Comma-separated list of topics", blank=True)
+    creator = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="created_waiting_rooms", null=True, blank=True
+    )
     fulfilled_course = models.ForeignKey(
         "Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="fulfilled_waiting_rooms"
     )
 
+    # For waiting for next session of existing course
+    course = models.ForeignKey(
+        "Course",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="session_waiting_rooms",
+        help_text="For waiting for next session of an existing course",
+    )
+
+    # Common fields
+    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return self.title
+        if self.course:
+            return f"Waiting room for next session of {self.course.title}"
+        return self.title or "Untitled Waiting Room"
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def topic_list(self):
+        """Return the list of topics as a list."""
+        if not self.topics:
+            return []
+        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def get_next_session(self):
+        """Get the next upcoming session for this course (if waiting for existing course)."""
+        if not self.course:
+            return None
+        from django.utils import timezone
+
+        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+    def mark_as_fulfilled(self, course=None):
+        """Mark the waiting room as fulfilled and notify participants."""
+        self.status = "fulfilled"
+        self.save()
+
+        if course:
+            from .notifications import notify_waiting_room_fulfilled
+
+            notify_waiting_room_fulfilled(self, course)
+
+    def close_waiting_room(self):
+        """Close the waiting room."""
+        self.status = "closed"
+        self.save()
 
 
 class GradeableLink(models.Model):
@@ -2315,24 +2477,6 @@ class GradeableLink(models.Model):
 
     def __str__(self):
         return self.title
-
-    def participant_count(self):
-        """Return the number of participants in the waiting room."""
-        return self.participants.count()
-
-    def topic_list(self):
-        """Return the list of topics as a list."""
-        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
-
-    def mark_as_fulfilled(self, course=None):
-        """Mark the waiting room as fulfilled and notify participants."""
-        self.status = "fulfilled"
-        self.save()
-
-        if course:
-            from .notifications import notify_waiting_room_fulfilled
-
-            notify_waiting_room_fulfilled(self, course)
 
     def get_absolute_url(self):
         return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
@@ -2840,3 +2984,139 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+class ForumVote(models.Model):
+    """Model for storing votes on forum topics and replies."""
+
+    VOTE_TYPES = [
+        ("up", "Upvote"),
+        ("down", "Downvote"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="forum_votes")
+    topic = models.ForeignKey("ForumTopic", on_delete=models.CASCADE, related_name="votes", null=True, blank=True)
+    reply = models.ForeignKey("ForumReply", on_delete=models.CASCADE, related_name="votes", null=True, blank=True)
+    vote_type = models.CharField(max_length=4, choices=VOTE_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("user", "topic"), ("user", "reply")]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(topic__isnull=False, reply__isnull=True)
+                    | models.Q(topic__isnull=True, reply__isnull=False)
+                ),
+                name="vote_topic_xor_reply",
+            )
+        ]
+
+    def __str__(self):
+        if self.topic:
+            return f"{self.user.username} {self.vote_type}voted topic #{self.topic.id}"
+        elif self.reply:
+            return f"{self.user.username} {self.vote_type}voted reply #{self.reply.id}"
+        return f"{self.user.username} cast a vote"
+
+
+def default_valid_until() -> datetime:
+    return timezone.now() + timedelta(days=30)
+
+
+class Discount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_until = models.DateTimeField(default=default_valid_until)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.code} for {self.user.username} on {self.course.title}"
+
+
+class VideoRequest(models.Model):
+    """Model for users to request educational videos on specific topics."""
+
+    title = models.CharField(max_length=200, help_text="Short title describing the requested video")
+    description = models.TextField(help_text="Detailed description of what you'd like to learn from this video")
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="video_requests")
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="video_requests")
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("approved", "Approved"),
+            ("fulfilled", "Fulfilled"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending",
+    )
+    fulfilled_by = models.ForeignKey(
+        EducationalVideo,
+        on_delete=models.SET_NULL,
+        related_name="fulfilling_requests",
+        null=True,
+        blank=True,
+        help_text="Educational video that fulfills this request",
+    )
+
+    class Meta:
+        verbose_name = "Video Request"
+        verbose_name_plural = "Video Requests"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class Survey(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)  # Added null=True
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class Question(models.Model):
+    QUESTION_TYPES = [
+        ("mcq", "Multiple Choice"),
+        ("checkbox", "Checkbox (Multiple Answers)"),
+        ("text", "Text Answer"),
+        ("true_false", "True/False"),
+        ("scale", "Scale Rating"),
+    ]
+
+    survey = models.ForeignKey("Survey", on_delete=models.CASCADE)
+    text = models.TextField()
+    type = models.CharField(max_length=20, choices=QUESTION_TYPES, default="mcq")
+    required = models.BooleanField(default=True)
+    scale_min = models.IntegerField(default=1)
+    scale_max = models.IntegerField(default=5)
+
+    def __str__(self):
+        return self.text
+
+
+class Choice(models.Model):
+    question = models.ForeignKey("Question", on_delete=models.CASCADE)
+    text = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.text
+
+
+class Response(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    question = models.ForeignKey("Question", on_delete=models.CASCADE)
+    choice = models.ForeignKey("Choice", on_delete=models.CASCADE, blank=True, null=True)
+    text_answer = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Response by {self.user.username} to {self.question.text}"
