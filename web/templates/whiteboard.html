@@ -100,7 +100,7 @@
 
       function setDefaultPenColor() {
           const isDark = document.documentElement.classList.contains('dark') ||
-              window.matchMedia('(prefers-color-schema: dark)').matches;
+              window.matchMedia('(prefers-color-scheme: dark)').matches;
           penColorInput.value = isDark ? '#ffffff' : '#000000';
           penColor = penColorInput.value;
       }
