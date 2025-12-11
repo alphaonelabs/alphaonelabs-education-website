@@ -92,16 +92,17 @@
       let imageScale = 1.0;
       let uploadedImage = null;
 
-      function getCanvasBackgroundColor() {
-          const isDark = document.documentElement.classList.contains('dark') ||
+     function isDarkMode() {
+          return document.documentElement.classList.contains('dark') ||
               window.matchMedia('(prefers-color-scheme: dark)').matches;
-          return isDark ? '#111827' : '#ffffff';
+      }
+
+      function getCanvasBackgroundColor() {
+          return isDarkMode() ? '#111827' : '#ffffff';
       }
 
       function setDefaultPenColor() {
-          const isDark = document.documentElement.classList.contains('dark') ||
-              window.matchMedia('(prefers-color-scheme: dark)').matches;
-          penColorInput.value = isDark ? '#ffffff' : '#000000';
+          penColorInput.value = isDarkMode() ? '#ffffff' : '#000000';
           penColor = penColorInput.value;
       }
 
