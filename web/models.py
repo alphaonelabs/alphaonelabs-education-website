@@ -94,6 +94,12 @@ class Profile(models.Model):
     how_did_you_hear_about_us = models.TextField(
         blank=True, help_text="How did you hear about us? You can enter text or a link."
     )
+    # Existing Profile/User model - add this field
+    wallet_address = models.CharField(
+        max_length=42,  # Ethereum addresses are 42 chars including '0x'
+        blank=True,
+        help_text="Student's Ethereum wallet address for receiving NFT badges",
+    )
 
     def __str__(self):
         visibility = "Public" if self.is_profile_public else "Private"
@@ -729,7 +735,10 @@ class Achievement(models.Model):
         ("quiz", "High Quiz Score"),
         ("streak", "Daily Learning Streak"),
     ]
-
+    BADGE_TYPE_CHOICES = (
+        ("traditional", "Traditional Badge"),
+        ("nft", "NFT Badge"),
+    )
     BADGE_ICONS = [
         ("fas fa-trophy", "Trophy"),
         ("fas fa-medal", "Medal"),
@@ -739,12 +748,15 @@ class Achievement(models.Model):
         ("fas fa-graduation-cap", "Graduation Cap"),
     ]
 
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPE_CHOICES, default="traditional")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="awarded_by", null=True)
+    # Fields for icon-Based badges:
     badge_icon = models.CharField(
         max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
     )
@@ -2336,6 +2348,29 @@ class UserQuiz(models.Model):
     def created_at(self):
         """Alias for start_time for template compatibility."""
         return self.start_time
+
+
+# NFT badge model
+class NFTBadge(models.Model):
+    achievement = models.OneToOneField(Achievement, on_delete=models.CASCADE, related_name="nft_badge")
+    blockchain = models.CharField(
+        max_length=20,
+        default="polygon",
+        choices=[("ethereum", "Ethereum"), ("polygon", "Polygon"), ("solana", "Solana")],
+    )
+    token_id = models.CharField(max_length=100, blank=True)
+    contract_address = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+    transaction_hash = models.CharField(max_length=100, blank=True)
+    metadata_uri = models.URLField(blank=True)
+    minted_at = models.DateTimeField(blank=True, null=True)
+    wallet_address = models.CharField(max_length=42, blank=True)
+    icon_url = models.URLField(blank=True)
+
+    def __str__(self):
+        return f"NFT Badge for {self.achievement.title}"
 
 
 class WaitingRoom(models.Model):

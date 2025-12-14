@@ -242,7 +242,7 @@ SITE_DOMAIN = "alphaonelabs.com"
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Since we're using email authentication
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification
+ACCOUNT_EMAIL_VERIFICATION = "optional"  # Require email verification
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PREVENT_ENUMERATION = True  # Prevent user enumeration
@@ -466,3 +466,8 @@ USE_X_FORWARDED_HOST = True
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
+
+# NFT based specs
+BLOCKFROST_BASE_ENDPOINT = "https://ipfs.blockfrost.io/api/v0"
+BLOCKFROST_API_KEY = env.str("BLOCKFROST_API_KEY", default="")
+WEB3_PROVIDER_URL = env.str("WEB3_PROVIDER_URL", default="")

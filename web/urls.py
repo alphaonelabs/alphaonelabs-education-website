@@ -46,10 +46,6 @@ urlpatterns = [
     path("github_update/", views.github_update, name="github_update"),
 ]
 
-if settings.DEBUG:
-    urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -394,6 +390,13 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # Nft badge urls
+    path("students/<int:student_id>/award-nft-badge/", views.award_nft_badge, name="award_nft_badge"),
+    path("award-nft-badge/", views.award_nft_badge, name="award_nft_badge_search"),
+    path("achievements/<int:achievement_id>/send-nft-badge/", views.send_nft_badge, name="send_nft_badge"),
+    path("achievements/<int:achievement_id>/", views.achievement_detail, name="achievement_detail"),
+    path("create-wallet/", views.create_student_wallet, name="create_student_wallet"),
+    path("show-mnemonic/", views.show_mnemonic, name="show_mnemonic"),
     # Grade-a-Link URLs
     path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
     path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
@@ -488,6 +491,11 @@ urlpatterns += i18n_patterns(
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )
+
+if settings.DEBUG:
+    urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 handler404 = "web.views.custom_404"
 handler429 = "web.views.custom_429"

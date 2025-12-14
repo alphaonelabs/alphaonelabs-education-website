@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4">
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 max-w-md w-full text-center">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Create Your Crypto Wallet</h2>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Click the button below to generate your Ethereum wallet.</p>
+      <form method="POST" class="mt-4">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition">
+          Create Wallet
+        </button>
+      </form>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+        <strong>Note:</strong> You will receive a <span class="font-medium text-gray-700 dark:text-gray-300">12-word recovery phrase</span>.
+        Store it securely, as it <span class="text-red-500 font-medium">cannot be recovered</span> if lost.
+      </p>
+    </div>
+  </div>
+{% endblock %}
