@@ -2951,6 +2951,119 @@ class ScheduledPost(models.Model):
         return self.content
 
 
+class AIChatSession(models.Model):
+    """Model for storing AI chat sessions."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ai_chat_sessions')
+    title = models.CharField(max_length=200, blank=True)
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True, related_name='ai_chat_sessions')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Chat session with {self.user.username} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+class AIChatMessage(models.Model):
+    """Model for storing individual messages in AI chat sessions."""
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('assistant', 'Assistant'),
+        ('system', 'System'),
+    ]
+
+    session = models.ForeignKey(AIChatSession, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    tokens_used = models.IntegerField(default=0)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.role} message in {self.session}"
+
+class LearningProfile(models.Model):
+    """Model for storing user's learning preferences and progress."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='learning_profile')
+    preferred_subjects = models.ManyToManyField(Subject, related_name='interested_learners')
+    learning_style = models.CharField(
+        max_length=20,
+        choices=[
+            ('visual', 'Visual'),
+            ('auditory', 'Auditory'),
+            ('reading', 'Reading/Writing'),
+            ('kinesthetic', 'Kinesthetic'),
+        ],
+        default='visual'
+    )
+    difficulty_preference = models.CharField(
+        max_length=20,
+        choices=[
+            ('beginner', 'Beginner'),
+            ('intermediate', 'Intermediate'),
+            ('advanced', 'Advanced'),
+        ],
+        default='beginner'
+    )
+    study_time_preference = models.CharField(
+        max_length=20,
+        choices=[
+            ('morning', 'Morning'),
+            ('afternoon', 'Afternoon'),
+            ('evening', 'Evening'),
+        ],
+        default='afternoon'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Learning profile for {self.user.username}"
+
+class StudyPlan(models.Model):
+    """Model for storing personalized study plans."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_plans')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='study_plans')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    goals = models.JSONField(default=list)
+    topics = models.JSONField(default=list)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Study plan for {self.user.username} - {self.title}"
+
+class StudySession(models.Model):
+    """Model for storing individual study sessions."""
+    study_plan = models.ForeignKey(StudyPlan, on_delete=models.CASCADE, related_name='sessions')
+    topic = models.CharField(max_length=200)
+    duration = models.IntegerField(help_text='Duration in minutes')
+    scheduled_time = models.DateTimeField()
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['scheduled_time']
+
+    def __str__(self):
+        return f"Study session for {self.study_plan.title} - {self.topic}"
+
+
 class ForumVote(models.Model):
     """Model for storing votes on forum topics and replies."""
 

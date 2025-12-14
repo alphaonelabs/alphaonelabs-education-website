@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}AI Response{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="card">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="card-title">AI Response</h1>
+            <div class="flex items-center space-x-4">
+                <button onclick="copyToClipboard(this)" 
+                        class="btn-secondary"
+                        aria-label="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button onclick="downloadResponse(this)" 
+                        class="btn-secondary"
+                        aria-label="Download response">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="ai-response" class="prose-dark prose-heading prose-body prose-link prose-code">
+            {{ response|safe }}
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(button) {
+    const response = document.getElementById('ai-response').innerText;
+    navigator.clipboard.writeText(response)
+        .then(() => {
+            const originalIcon = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                button.innerHTML = originalIcon;
+            }, 2000);
+        })
+        .catch(err => {
+            console.error('Failed to copy text: ', err);
+            const originalIcon = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-times"></i>';
+            setTimeout(() => {
+                button.innerHTML = originalIcon;
+            }, 2000);
+        });
+}
+
+function downloadResponse(button) {
+    const response = document.getElementById('ai-response').innerText;
+    const blob = new Blob([response], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai-response.txt';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    // Show success message
+    const originalIcon = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i>';
+    setTimeout(() => {
+        button.innerHTML = originalIcon;
+    }, 2000);
+}
+
+// Re-render MathJax when content changes
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof MathJax !== 'undefined') {
+        MathJax.typesetPromise()
+            .catch(function(err) {
+                console.error('Error typesetting math:', err);
+                // Show user-friendly error message
+                const mathError = document.createElement('div');
+                mathError.className = 'text-red-600 dark:text-red-400 text-sm mt-2';
+                mathError.textContent = 'There was an error rendering mathematical expressions. Please refresh the page.';
+                document.getElementById('ai-response').appendChild(mathError);
+            });
+    }
+});
+</script>
+{% endblock %} 

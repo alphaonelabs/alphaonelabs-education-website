@@ -44,6 +44,9 @@ from django.http import (
     HttpResponseBadRequest,
     HttpResponseForbidden,
     JsonResponse,
+    HttpResponseNotFound,
+    HttpResponseServerError,
+    HttpRequest,
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -56,7 +59,7 @@ from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -111,6 +114,9 @@ from .marketing import (
 )
 from .models import (
     Achievement,
+    AIChatMessage,
+    AIChatSession,
+    Avatar,
     Badge,
     BlogComment,
     BlogPost,
@@ -134,6 +140,7 @@ from .models import (
     ForumVote,
     Goods,
     GradeableLink,
+    LearningProfile,
     LearningStreak,
     LinkGrade,
     MembershipPlan,
@@ -144,12 +151,17 @@ from .models import (
     NotificationPreference,
     Order,
     OrderItem,
+    PeerChallenge,
+    PeerChallengeInvitation,
     Payment,
     PeerConnection,
     PeerMessage,
     ProductImage,
     Profile,
     ProgressTracker,
+    Quiz,
+    QuizOption,
+    QuizQuestion,
     Question,
     Response,
     Review,
@@ -161,6 +173,8 @@ from .models import (
     Storefront,
     StudyGroup,
     StudyGroupInvite,
+    StudyPlan,
+    StudySession,
     Subject,
     SuccessStory,
     Survey,
@@ -169,6 +183,8 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    UserMembership,
+    UserQuiz,
     VideoRequest,
     WaitingRoom,
     WebRequest,
@@ -198,6 +214,7 @@ from .utils import (
     reactivate_subscription,
     setup_stripe,
 )
+from .ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -2659,14 +2676,14 @@ def teacher_dashboard(request):
     return render(request, "dashboard/teacher.html", context)
 
 
-def custom_404(request, exception):
-    """Custom 404 error handler"""
-    return render(request, "404.html", status=404)
+def custom_404(request, exception=None):
+    """Custom 404 error page."""
+    return HttpResponseNotFound(render_to_string('web/404.html'))
 
 
-# def custom_500(request):
-#     """Custom 500 error handler"""
-#     return render(request, "500.html", status=500)
+def custom_500(request):
+    """Custom 500 error page."""
+    return HttpResponseServerError(render_to_string('web/500.html'))
 
 
 def custom_429(request, exception=None):
@@ -3221,14 +3238,14 @@ def get_course_calendar(request, slug):
 
     # Get previous and next month for navigation
     if month == 1:
-        prev_month = {"year": year - 1, "month": 12}
+        prev_month = current_month.replace(year=current_month.year - 1, month=12)
     else:
-        prev_month = {"year": year, "month": month - 1}
+        prev_month = current_month.replace(month=current_month.month - 1)
 
     if month == 12:
-        next_month = {"year": year + 1, "month": 1}
+        next_month = current_month.replace(year=current_month.year + 1, month=1)
     else:
-        next_month = {"year": year, "month": month + 1}
+        next_month = current_month.replace(month=current_month.month + 1)
 
     # Get sessions for the current month
     month_sessions = course.sessions.filter(start_time__year=year, start_time__month=month).order_by("start_time")
@@ -7400,6 +7417,239 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+@login_required
+@require_http_methods(["GET"])
+def ai_chat(request):
+    """Render the AI chat interface"""
+    return render(request, "web/ai_chat/chat.html")
+
+@login_required
+@require_http_methods(["POST"])
+def create_chat_session(request):
+    """Create a new chat session"""
+    try:
+        session = AIChatSession.objects.create(user=request.user)
+        return JsonResponse({"session_id": str(session.id)})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+@login_required
+@require_http_methods(["POST"])
+def send_message(request):
+    """Send a message to the AI tutor"""
+    try:
+        data = json.loads(request.body)
+        message = data.get("message")
+        session_id = data.get("session_id")
+
+        if not message or not session_id:
+            return JsonResponse({
+                "error": "Message and session_id are required",
+                "status": "error",
+                "details": "Please provide both a message and a session ID"
+            }, status=400)
+
+        try:
+            session = AIChatSession.objects.get(id=session_id, user=request.user)
+        except AIChatSession.DoesNotExist:
+            return JsonResponse({
+                "error": "Chat session not found",
+                "status": "error",
+                "details": f"Session with ID {session_id} does not exist or you don't have access to it"
+            }, status=404)
+        
+        # Save user message
+        try:
+            user_message = AIChatMessage.objects.create(
+                session=session,
+                role='user',
+                content=message
+            )
+        except Exception as e:
+            logger.error(f"Error saving user message: {str(e)}")
+            return JsonResponse({
+                "error": "Failed to save user message",
+                "status": "error",
+                "details": str(e)
+            }, status=500)
+
+        # Get AI response
+        try:
+            ai_response = ai_service.get_response(message)
+            
+            if not ai_response:
+                raise Exception("AI service returned empty response")
+            
+            # Save AI response
+            try:
+                assistant_message = AIChatMessage.objects.create(
+                    session=session,
+                    role='assistant',
+                    content=ai_response
+                )
+            except Exception as e:
+                logger.error(f"Error saving AI response: {str(e)}")
+                return JsonResponse({
+                    "error": "Failed to save AI response",
+                    "status": "error",
+                    "details": str(e)
+                }, status=500)
+
+            return JsonResponse({
+                "status": "success",
+                "user_message": {
+                    "id": str(user_message.id),
+                    "content": user_message.content,
+                    "created_at": user_message.created_at.isoformat()
+                },
+                "assistant_message": {
+                    "id": str(assistant_message.id),
+                    "content": assistant_message.content,
+                    "created_at": assistant_message.created_at.isoformat()
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error getting AI response: {str(e)}")
+            return JsonResponse({
+                "error": "Failed to get AI response",
+                "status": "error",
+                "details": str(e)
+            }, status=500)
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            "error": "Invalid JSON data",
+            "status": "error",
+            "details": "The request body must contain valid JSON data"
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Unexpected error in send_message: {str(e)}")
+        return JsonResponse({
+            "error": "Internal server error",
+            "status": "error",
+            "details": str(e)
+        }, status=500)
+
+@login_required
+@require_http_methods(["GET"])
+def get_chat_sessions(request):
+    """Get all chat sessions for the current user"""
+    try:
+        sessions = AIChatSession.objects.filter(user=request.user).order_by("-created_at")
+        return JsonResponse({
+            "sessions": [
+                {
+                    "id": str(session.id),
+                    "created_at": session.created_at.isoformat(),
+                    "last_message": session.messages.order_by("-created_at").first().content if session.messages.exists() else None
+                }
+                for session in sessions
+            ]
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+@login_required
+@require_http_methods(["GET"])
+def get_chat_history(request, session_id):
+    """Get chat history for a specific session"""
+    try:
+        session = AIChatSession.objects.get(id=session_id, user=request.user)
+        messages = session.messages.all().order_by("created_at")
+        
+        # Convert messages to list to ensure they're serialized
+        messages_list = [
+            {
+                "id": str(msg.id),
+                "role": msg.role,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat()
+            }
+            for msg in messages
+        ]
+        
+        return JsonResponse({
+            "status": "success",
+            "title": session.title,
+            "messages": messages_list
+        })
+    except AIChatSession.DoesNotExist:
+        return JsonResponse({
+            "status": "error",
+            "message": "Chat session not found"
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "message": str(e)
+        }, status=400)
+
+@login_required
+def chat_interface(request):
+    """Handle both GET and POST requests for the chat interface"""
+    if request.method == 'GET':
+        return render(request, 'ai/chat.html')
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            message = data.get('message')
+            
+            if not message:
+                return JsonResponse({'error': 'Message is required'}, status=400)
+            
+            # Get AI response
+            response = ai_service.get_response(message)
+            
+            return JsonResponse({'response': response})
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+@require_http_methods(["POST"])
+def delete_chat_session(request, session_id):
+    """Delete a chat session."""
+    try:
+        session = get_object_or_404(AIChatSession, id=session_id, user=request.user)
+        session.delete()
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+@login_required
+@require_http_methods(["POST"])
+def rename_chat_session(request, session_id):
+    """Rename a chat session."""
+    try:
+        data = json.loads(request.body)
+        new_title = data.get('title', '').strip()
+        
+        if not new_title:
+            return JsonResponse({"error": "Title cannot be empty"}, status=400)
+            
+        session = get_object_or_404(AIChatSession, id=session_id, user=request.user)
+        session.title = new_title
+        session.save()
+        
+        return JsonResponse({
+            "status": "success",
+            "title": session.title
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+@login_required
+def study_plan_interface(request):
+    """Render the study plan interface."""
+    subjects = Subject.objects.all().order_by('name')
+    return render(request, 'web/ai_chat/study_plan.html', {
+        'subjects': subjects
+    })
 
 
 def generate_discount_code(length=8):

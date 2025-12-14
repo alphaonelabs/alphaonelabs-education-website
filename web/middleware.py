@@ -56,17 +56,11 @@ class GlobalExceptionMiddleware:
         tb = traceback.format_exc()
         error_message = f"ERROR: {str(exception)}\n\n" f"Traceback:\n{tb}\n\n" f"Path: {request.path}"
 
-        if settings.DEBUG:
-            context = {
-                "error_message": error_message,
-                "exception": exception,
-                "traceback": tb,
-            }
-            return render(request, "500.html", context, status=500)
-        else:
+        # Send error to Slack in production
+        if not settings.DEBUG:
             send_slack_message(error_message)
-            return render(request, "500.html", status=500)
 
+        # Let Django's error handlers handle the response
         return None
 
 

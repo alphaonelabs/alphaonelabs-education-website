@@ -54,6 +54,13 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path("ai/chat/", views.ai_chat, name="ai_chat"),
+    path("ai/chat/send/", views.send_message, name="ai_chat_send"),
+    path("ai/chat/sessions/", views.get_chat_sessions, name="ai_chat_sessions"),
+    path("ai/chat/<int:session_id>/", views.get_chat_history, name="ai_chat_history"),
+    path("ai/chat/create/", views.create_chat_session, name="ai_chat_create"),
+    path("ai/chat/<int:session_id>/delete/", views.delete_chat_session, name="ai_chat_delete"),
+    path("ai/chat/<int:session_id>/rename/", views.rename_chat_session, name="ai_chat_rename"),
     path("ref/<str:code>/", views.handle_referral, name="handle_referral"),  # New referral URL format
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
@@ -485,6 +492,9 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    # AI Chat URLs
+    path("ai/chat/", views.chat_interface, name="chat_interface"),
+    path("ai/study-plan/", views.study_plan_interface, name='study_plan_interface'),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )
