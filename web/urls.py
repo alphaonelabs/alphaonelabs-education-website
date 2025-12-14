@@ -19,13 +19,7 @@ from .views import (
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
-    SurveyCreateView,
-    SurveyDeleteView,
-    SurveyDetailView,
-    SurveyListView,
-    SurveyResultsView,
     add_goods_to_cart,
-    apply_discount_via_referrer,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -34,7 +28,6 @@ from .views import (
     sales_analytics,
     sales_data,
     streak_detail,
-    submit_survey,
 )
 
 # Non-prefixed URLs
@@ -54,13 +47,11 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
-    path("ref/<str:code>/", views.handle_referral, name="handle_referral"),  # New referral URL format
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
-    path("users/", views.users_list, name="users_list"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
     path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
@@ -75,6 +66,14 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Study Planner URLs
+    path("study-planner/", login_required(views.study_planner), name="study_planner"),
+    path("study-planner/create/", login_required(views.create_study_plan), name="create_study_plan"),
+    path("study-planner/<int:plan_id>/", login_required(views.study_plan_detail), name="study_plan_detail"),
+    path("study-planner/<int:plan_id>/add-session/", login_required(views.add_study_session), name="add_study_session"),
+    path("study-planner/session/<int:session_id>/complete/", login_required(views.mark_session_complete), name="mark_session_complete"),
+    path("study-planner/goal/<int:goal_id>/update/", login_required(views.update_study_goal), name="update_study_goal"),
+    path("study-planner/<int:plan_id>/delete/", login_required(views.delete_study_plan), name="delete_study_plan"),
     # Leaderboard URLs
     path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
@@ -94,7 +93,6 @@ urlpatterns += i18n_patterns(
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
-    # SURVEY URLs
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
@@ -129,16 +127,6 @@ urlpatterns += i18n_patterns(
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
-    # Video URLs
-    path("videos/requests/", views.video_request_list, name="video_request_list"),
-    path("videos/requests/submit/", login_required(views.submit_video_request), name="submit_video_request"),
-    # SURVEY URLs
-    path("surveys/", SurveyListView.as_view(), name="surveys"),
-    path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
-    path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
-    path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
-    path("surveys/<int:pk>/submit/", submit_survey, name="submit-survey"),
-    path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -146,8 +134,6 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
-    # discount
-    path("discounts/apply/", apply_discount_via_referrer, name="apply_discount_via_referrer"),
     # Avatar customization
     path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
@@ -248,8 +234,6 @@ urlpatterns += i18n_patterns(
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
-    path("forum/topic/<int:pk>/vote/", views.topic_vote, name="topic_vote"),
-    path("forum/reply/<int:pk>/vote/", views.reply_vote, name="reply_vote"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -312,9 +296,9 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
-    path("videos/", views.educational_videos_list, name="educational_videos_list"),
-    path("videos/upload/", views.upload_educational_video, name="upload_educational_video"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
+    path("videos/", views.educational_videos_list, name="educational_videos_list"),
+    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(
@@ -355,10 +339,8 @@ urlpatterns += i18n_patterns(
     path("analytics/data/", sales_data, name="sales_data"),
     path("memes/", views.meme_list, name="meme_list"),
     path("memes/add/", views.add_meme, name="add_meme"),
-    path("memes/<slug:slug>/", views.meme_detail, name="meme_detail"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
-    path("sync_github_milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Team Collaboration URLs
     path("teams/", views.team_goals, name="team_goals"),
     path("teams/create/", views.create_team_goal, name="create_team_goal"),
@@ -369,7 +351,6 @@ urlpatterns += i18n_patterns(
     path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
     path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
     path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
-    path("teams/<int:team_goal_id>/submit_proof/", views.submit_team_proof, name="submit_team_proof"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
@@ -469,8 +450,6 @@ urlpatterns += i18n_patterns(
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
-    # Contributors
-    path("contributors/", views.contributors_list_view, name="contributors_list_view"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
@@ -485,9 +464,9 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
-    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )
 
 handler404 = "web.views.custom_404"
+handler500 = "web.views.custom_500"
 handler429 = "web.views.custom_429"

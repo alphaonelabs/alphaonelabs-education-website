@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Study Planner</h1>
+            <p class="text-gray-600 dark:text-gray-400">Organize your study schedule and track your progress</p>
+        </div>
+        <a href="{% url 'create_study_plan' %}"
+            class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+            Create New Plan
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Active Study Plans -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Active Study Plans</h2>
+                
+                {% for plan in study_plans %}
+                <div class="border-b border-gray-200 dark:border-gray-700 last:border-0 py-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                <a href="{% url 'study_plan_detail' plan.id %}" class="hover:text-teal-600 dark:hover:text-teal-400">
+                                    {{ plan.title }}
+                                </a>
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ plan.description }}</p>
+                            <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                <span>Start: {{ plan.start_date|date:"M d, Y" }}</span>
+                                <span>End: {{ plan.end_date|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <a href="{% url 'add_study_session' plan.id %}"
+                                class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
+                                Add Session
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-600 dark:text-gray-400 text-center py-4">No active study plans. Create one to get started!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Upcoming Sessions -->
+        <div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Upcoming Sessions</h2>
+                
+                {% for session in upcoming_sessions %}
+                <div class="border-b border-gray-200 dark:border-gray-700 last:border-0 py-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ session.title }}</h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ session.subject.name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                            </p>
+                        </div>
+                        <a href="{% url 'study_plan_detail' session.study_plan.id %}"
+                            class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
+                            View Plan
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-600 dark:text-gray-400 text-center py-4">No upcoming study sessions.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Quick Stats</h2>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Plans</h3>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ study_plans.count }}</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Upcoming Sessions</h3>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ upcoming_sessions.count }}</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Completed Sessions</h3>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ completed_sessions_count }}</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Study Goals</h3>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ total_goals_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
