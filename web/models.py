@@ -611,6 +611,7 @@ class Enrollment(models.Model):
 
 class SessionAttendance(models.Model):
     STATUS_CHOICES = [
+        ("pending", "Pending Verification"),  # New status
         ("present", "Present"),
         ("absent", "Absent"),
         ("excused", "Excused"),
@@ -620,6 +621,8 @@ class SessionAttendance(models.Model):
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="attendances")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="session_attendances")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="absent")
+    self_reported = models.BooleanField(default=False)  # Flag to track self-reported attendance
+    verified_by_teacher = models.BooleanField(default=False)  # Track if verified by teacher
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
