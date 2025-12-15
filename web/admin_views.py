@@ -1,15 +1,26 @@
+import logging
 from datetime import timedelta
 
 from django.apps import apps
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Case, Count, F, FloatField, Sum, When
 from django.db.models.functions import TruncDate
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
+from .admin_system import (
+    get_available_commands,
+    get_system_metrics,
+    run_management_command_worker,
+)
 from .models import Goods, OrderItem, Storefront
+
+logger = logging.getLogger(__name__)
 
 
 @staff_member_required
@@ -197,3 +208,74 @@ def admin_dashboard(request):
     )
 
     return render(request, "admin/dashboard.html", context)
+
+
+def is_superuser(user):
+    """Check if user is a superuser."""
+    return user.is_superuser
+
+
+@user_passes_test(is_superuser)
+def system_dashboard(request):
+    """Display system metrics and management commands dashboard."""
+    metrics = get_system_metrics()
+    commands = get_available_commands()
+
+    return render(
+        request,
+        "admin/system_dashboard.html",
+        {
+            "metrics": metrics,
+            "commands": commands,
+            "title": "System Dashboard",
+        },
+    )
+
+
+@user_passes_test(is_superuser)
+@require_http_methods(["GET"])
+def system_metrics_api(request):
+    """API endpoint to get current system metrics as JSON."""
+    metrics = get_system_metrics()
+    return JsonResponse(metrics)
+
+
+@user_passes_test(is_superuser)
+@require_http_methods(["POST"])
+def run_management_command(request):
+    """Execute a whitelisted Django management command."""
+    command_name = request.POST.get("command", "").strip()
+
+    # Whitelist of allowed commands
+    allowed_commands = {
+        "migrate": "Run database migrations",
+        "collectstatic": "Collect static files",
+        "create_test_data": "Create sample data for testing",
+        "createsuperuser": "Create a new superuser",
+        "cleanup": "Clean up old data",
+    }
+
+    if not command_name or command_name not in allowed_commands:
+        return JsonResponse(
+            {"error": f"Command not allowed. Allowed commands: {', '.join(allowed_commands.keys())}"}, status=400
+        )
+
+    try:
+        output = run_management_command_worker(command_name)
+        return JsonResponse(
+            {
+                "output": output,
+                "command": command_name,
+                "status": "success",
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error running management command {command_name}: {str(e)}")
+        return JsonResponse(
+            {
+                "error": str(e),
+                "command": command_name,
+                "status": "error",
+            },
+            status=500,
+        )

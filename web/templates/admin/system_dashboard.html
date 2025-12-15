@@ -1,0 +1,297 @@
+{% extends "admin/base_site.html" %}
+
+{% load static %}
+
+{% block title %}System Dashboard - Admin{% endblock %}
+{% block content %}
+  <style>
+      .metric-card {
+          background: white;
+          border-radius: 8px;
+          padding: 20px;
+          margin-bottom: 20px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .metric-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: #666;
+          margin-bottom: 10px;
+          text-transform: uppercase;
+      }
+
+      .metric-value {
+          font-size: 32px;
+          font-weight: bold;
+          color: #333;
+          margin-bottom: 10px;
+      }
+
+      .metric-bar {
+          height: 8px;
+          background: #eee;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-top: 10px;
+      }
+
+      .metric-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #4caf50, #8bc34a);
+          transition: width 0.3s ease;
+      }
+
+      .metric-fill.warning {
+          background: linear-gradient(90deg, #ff9800, #ffc107);
+      }
+
+      .metric-fill.danger {
+          background: linear-gradient(90deg, #f44336, #e91e63);
+      }
+
+      .metric-label {
+          font-size: 12px;
+          color: #999;
+          margin-top: 5px;
+      }
+
+      .command-list {
+          list-style: none;
+          padding: 0;
+      }
+
+      .command-item {
+          background: #f5f5f5;
+          border-left: 4px solid #4caf50;
+          padding: 12px;
+          margin-bottom: 10px;
+          border-radius: 4px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+      .command-name {
+          font-family: monospace;
+          font-size: 12px;
+          font-weight: 600;
+          color: #333;
+      }
+
+      .command-app {
+          font-size: 11px;
+          color: #999;
+          margin-top: 4px;
+      }
+
+      .btn-run {
+          background: #4caf50;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          transition: background 0.2s ease;
+      }
+
+      .btn-run:hover {
+          background: #45a049;
+      }
+
+      .btn-run:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+      }
+
+      .command-output {
+          display: none;
+          background: #1e1e1e;
+          color: #d4d4d4;
+          padding: 12px;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 12px;
+          margin-top: 10px;
+          max-height: 300px;
+          overflow-y: auto;
+      }
+
+      .command-output.show {
+          display: block;
+      }
+
+      .grid-2 {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+      }
+
+      .grid-4 {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+      }
+
+      .section-title {
+          font-size: 20px;
+          font-weight: bold;
+          margin-top: 30px;
+          margin-bottom: 15px;
+          color: #333;
+          border-bottom: 2px solid #4caf50;
+          padding-bottom: 10px;
+      }
+
+      .timestamp {
+          font-size: 11px;
+          color: #999;
+          margin-top: 10px;
+      }
+  </style>
+  <div style="margin: -12px -12px 20px -12px;
+              background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+              color: white;
+              padding: 20px">
+    <h1 style="margin: 0; font-size: 28px;">System Dashboard</h1>
+    <p style="margin: 5px 0 0 0; opacity: 0.9;">Server health monitoring and management</p>
+  </div>
+  {% if metrics %}
+    <div class="section-title">📊 System Metrics</div>
+    <!-- CPU & Memory Overview -->
+    <div class="grid-4">
+      <!-- CPU -->
+      <div class="metric-card">
+        <div class="metric-title">CPU Usage</div>
+        <div class="metric-value">{{ metrics.cpu.percent|floatformat:1 }}%</div>
+        <div class="metric-bar">
+          <div class="metric-fill {% if metrics.cpu.percent > 80 %}danger{% elif metrics.cpu.percent > 60 %}warning{% endif %}"
+               style="width: {{ metrics.cpu.percent }}%"></div>
+        </div>
+        <div class="metric-label">{{ metrics.cpu.count }} cores @ {{ metrics.cpu.frequency|floatformat:0 }} MHz</div>
+      </div>
+      <!-- Memory -->
+      <div class="metric-card">
+        <div class="metric-title">RAM Usage</div>
+        <div class="metric-value">{{ metrics.memory.percent|floatformat:1 }}%</div>
+        <div class="metric-bar">
+          <div class="metric-fill {% if metrics.memory.percent > 80 %}danger{% elif metrics.memory.percent > 60 %}warning{% endif %}"
+               style="width: {{ metrics.memory.percent }}%"></div>
+        </div>
+        <div class="metric-label">{{ metrics.memory.used|filesizeformat }} / {{ metrics.memory.total|filesizeformat }}</div>
+      </div>
+      <!-- Disk -->
+      <div class="metric-card">
+        <div class="metric-title">Disk Usage</div>
+        <div class="metric-value">{{ metrics.disk.percent|floatformat:1 }}%</div>
+        <div class="metric-bar">
+          <div class="metric-fill {% if metrics.disk.percent > 80 %}danger{% elif metrics.disk.percent > 60 %}warning{% endif %}"
+               style="width: {{ metrics.disk.percent }}%"></div>
+        </div>
+        <div class="metric-label">{{ metrics.disk.used|filesizeformat }} / {{ metrics.disk.total|filesizeformat }}</div>
+      </div>
+      <!-- Swap -->
+      <div class="metric-card">
+        <div class="metric-title">Swap Usage</div>
+        <div class="metric-value">{{ metrics.swap.percent|floatformat:1 }}%</div>
+        <div class="metric-bar">
+          <div class="metric-fill {% if metrics.swap.percent > 50 %}warning{% endif %}"
+               style="width: {{ metrics.swap.percent }}%"></div>
+        </div>
+        <div class="metric-label">{{ metrics.swap.used|filesizeformat }} / {{ metrics.swap.total|filesizeformat }}</div>
+      </div>
+    </div>
+    <div class="metric-card" style="margin-top: 20px;">
+      <div class="metric-title">Process Memory</div>
+      <div style="display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 20px">
+        <div>
+          <strong>RSS:</strong> {{ metrics.process.rss|filesizeformat }}
+        </div>
+        <div>
+          <strong>VMS:</strong> {{ metrics.process.vms|filesizeformat }}
+        </div>
+      </div>
+      <div class="timestamp">Last updated: {{ metrics.timestamp|date:"Y-m-d H:i:s" }}</div>
+    </div>
+  {% else %}
+    <div class="metric-card"
+         style="background: #fff3cd;
+                border-left: 4px solid #ffc107">
+      ⚠️ Unable to fetch system metrics. Make sure psutil is installed: <code>pip install psutil</code>
+    </div>
+  {% endif %}
+  <!-- Management Commands Section -->
+  <div class="section-title">⚙️ Management Commands</div>
+  {% if commands %}
+    <div class="metric-card">
+      <ul class="command-list">
+        {% for command in commands %}
+          <li class="command-item">
+            <div>
+              <div class="command-name">{{ command.name }}</div>
+              <div class="command-app">{{ command.app }}</div>
+            </div>
+            <button class="btn-run"
+                    data-command="{{ command.full_name }}"
+                    onclick="runCommand(this, '{{ command.full_name }}')">Run</button>
+            <div class="command-output" id="output-{{ command.full_name }}"></div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="metric-card"
+         style="background: #e3f2fd;
+                border-left: 4px solid #2196f3">ℹ️ No management commands found.</div>
+  {% endif %}
+  <script>
+      function runCommand(button, commandName) {
+          button.disabled = true;
+          const outputDiv = document.getElementById(`output-${commandName}`);
+
+          fetch("{% url 'run_management_command' %}", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/x-www-form-urlencoded",
+                      "X-CSRFToken": "{{ csrf_token }}"
+                  },
+                  body: `command=${encodeURIComponent(commandName)}`
+              })
+              .then(response => response.json())
+              .then(data => {
+                  outputDiv.textContent = data.output ? data.output.join("\n") : data.error || "No output";
+                  outputDiv.classList.add("show");
+                  button.disabled = false;
+                  button.textContent = "Run Again";
+              })
+              .catch(error => {
+                  outputDiv.textContent = `Error: ${error}`;
+                  outputDiv.classList.add("show");
+                  button.disabled = false;
+              });
+      }
+
+      // Auto-refresh metrics every 10 seconds if available
+      {
+          %
+          if metrics %
+      }
+      setInterval(() => {
+          fetch("{% url 'system_metrics_api' %}")
+              .then(response => response.json())
+              .then(data => {
+                  // You could update the page here with new metrics
+                  console.log("Metrics updated:", data);
+              })
+              .catch(error => console.error("Error fetching metrics:", error));
+      }, 10000);
+      {
+          %
+          endif %
+      }
+  </script>
+{% endblock %}
