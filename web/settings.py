@@ -175,7 +175,7 @@ ROOT_URLCONF = "web.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates", BASE_DIR / "web/templates"],
+        "DIRS": [BASE_DIR / "web/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -465,4 +465,9 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+
+# Allow per-environment override of secure cookie behavior (useful for staging without HTTPS).
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
