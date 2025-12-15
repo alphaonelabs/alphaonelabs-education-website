@@ -3129,8 +3129,8 @@ class MassClassStream(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Stream by {self.teacher.username} ({self.status})"    
-    
+        return f"Stream by {self.teacher.username} ({self.status})"
+
 class VirtualClassroom(models.Model):
     """Model for storing virtual classroom instances."""
 
