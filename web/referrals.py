@@ -91,4 +91,3 @@ The Alpha One Labs Team
         [user.email],
         fail_silently=True,
     )
-
