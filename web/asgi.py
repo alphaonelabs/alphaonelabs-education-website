@@ -16,29 +16,50 @@ from __future__ import annotations
 import os
 from typing import Any, Awaitable, Callable, Dict
 
+import django
+from channels.auth import AuthMiddlewareStack  # type: ignore
+from channels.routing import ProtocolTypeRouter, URLRouter  # type: ignore
 from django.core.asgi import get_asgi_application
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
+# Initialize Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "web.settings")
+django.setup()
 
-# Obtain the original Django ASGI app
+try:  # Import websocket URL patterns (must exist when Channels is assumed installed)
+    from web.routing import websocket_urlpatterns  # type: ignore
+except Exception:  # pragma: no cover - fail safe with empty list
+    websocket_urlpatterns = []  # type: ignore
+
 django_asgi_app = get_asgi_application()
+
+
+channels_application = ProtocolTypeRouter(  # type: ignore
+    {
+        "http": django_asgi_app,
+        "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),  # type: ignore
+    }
+)
+
+# Wrap the entire router so both HTTP and WebSocket errors reach Sentry
+channels_application = SentryAsgiMiddleware(channels_application)
 
 
 async def application(
     scope: Dict[str, Any],
     receive: Callable[[], Awaitable[Dict[str, Any]]],
     send: Callable[[Dict[str, Any]], Awaitable[None]],
-) -> None:  # type: ignore[override]
-    """ASGI application wrapper.
+) -> None:
+    """Unified ASGI application with optional Channels + lifespan handling.
 
-    Handles lifespan scope (startup/shutdown) explicitly so Django's internal
-    application is never invoked with an unsupported scope type. Other scopes
-    are delegated unchanged.
+    Provides:
+    - Lifespan scope acknowledgement to prevent Django ValueError noise.
+    - Optional Channels (websocket) support when dependencies and routes exist.
+    - Delegates all other scopes to either Channels router or plain Django.
     """
     scope_type = scope.get("type")
 
     if scope_type == "lifespan":
-        # Minimal lifespan protocol implementation: acknowledge and exit.
         while True:
             message = await receive()
             msg_type = message.get("type")
@@ -48,5 +69,4 @@ async def application(
                 await send({"type": "lifespan.shutdown.complete"})
                 return
     else:
-        # Delegate HTTP / websocket (future) / other supported scopes to Django
-        await django_asgi_app(scope, receive, send)
+        await channels_application(scope, receive, send)

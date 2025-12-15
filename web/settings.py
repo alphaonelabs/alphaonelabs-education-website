@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from pathlib import Path
@@ -5,6 +6,7 @@ from pathlib import Path
 import environ
 import sentry_sdk
 from cryptography.fernet import Fernet
+from django.core.exceptions import DisallowedHost
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -24,16 +26,22 @@ if os.path.exists(env_file):
 else:
     print("No .env file found.")
 
-# Re-initialize / initialize Sentry AFTER environment variables are loaded so DSN is present.
+# Re-initialize / initialize Sentry AFTER environment variables are loaded so DSN is present here.
 SENTRY_DSN = env.str("SENTRY_DSN", default="")
 if SENTRY_DSN:
-    sentry_logging = LoggingIntegration(level=os.getenv("SENTRY_LOG_LEVEL", "INFO"), event_level=None)
+    # Capture WARNING+ as breadcrumbs and ERROR+ as events
+    sentry_logging = LoggingIntegration(
+        level=getattr(logging, os.getenv("SENTRY_LOG_LEVEL", "INFO").upper(), logging.INFO),
+        event_level=logging.ERROR,
+    )
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), sentry_logging],
         environment=env.str("ENVIRONMENT", default="development"),
         send_default_pii=True,
         traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 0.0)),  # set >0 to enable performance
+        # Do not send Invalid Host (DisallowedHost) errors to Sentry
+        ignore_errors=(DisallowedHost,),
     )
 else:
     # Helpful notice for ops without breaking startup
@@ -131,6 +139,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django.contrib.humanize",
+    "channels",
     "allauth",
     "allauth.account",
     "captcha",
@@ -166,7 +175,7 @@ ROOT_URLCONF = "web.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates", BASE_DIR / "web/templates"],
+        "DIRS": [BASE_DIR / "web/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -194,6 +203,15 @@ WSGI_APPLICATION = "web.wsgi.application"
 
 # Add ASGI application configuration
 ASGI_APPLICATION = "web.asgi.application"
+
+# Channels / Redis channel layer configuration (assumes a local Redis unless overridden)
+REDIS_URL = env.str("REDIS_URL", default="redis://127.0.0.1:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+}
 
 DATABASES = {
     "default": {
@@ -304,21 +322,48 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Drop noisy Invalid Host messages from logs entirely
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "null": {"class": "logging.NullHandler"},
+        # Ensure any accidental use of 'mail_admins' will be a no-op
+        "mail_admins": {"class": "logging.NullHandler"},
+    },
+    "loggers": {
+        # Django emits DisallowedHost on invalid/missing Host header; silence it
+        "django.security.DisallowedHost": {
+            "handlers": ["null"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        # Do not email admins on request/server errors
+        "django.request": {
+            "handlers": ["null"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["null"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
+
 # Email settings
 if DEBUG:
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
     print("Using console email backend with Slack notifications for development")
     DEFAULT_FROM_EMAIL = "noreply@example.com"  # Default for development
-    SENDGRID_API_KEY = None  # Not needed in development
+    MAILGUN_SENDING_KEY = None  # Not needed in development
 else:
     # Production email settings
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
-    SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default=env.str("SENDGRID_PASSWORD", default=""))
-    EMAIL_HOST = "smtp.sendgrid.net"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = "apikey"
-    EMAIL_HOST_PASSWORD = env.str("SENDGRID_PASSWORD", default="")
+    MAILGUN_SENDING_KEY = env.str("MAILGUN_SENDING_KEY", default="")
+    # Optional: set MAILGUN_DOMAIN explicitly; otherwise inferred from DEFAULT_FROM_EMAIL
+    MAILGUN_DOMAIN = env.str("MAILGUN_DOMAIN", default="") or None
     DEFAULT_FROM_EMAIL = env.str("EMAIL_FROM", default="noreply@alphaonelabs.com")
     EMAIL_FROM = os.getenv("EMAIL_FROM")
 
@@ -420,4 +465,9 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+
+# Allow per-environment override of secure cookie behavior (useful for staging without HTTPS).
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
