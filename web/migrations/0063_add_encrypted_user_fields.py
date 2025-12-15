@@ -1,6 +1,7 @@
 # Generated migration for adding encrypted fields to Profile model
 
 from django.db import migrations
+
 import web.fields
 
 
