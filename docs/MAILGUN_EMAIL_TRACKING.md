@@ -79,7 +79,7 @@ Added the following fields to track email statistics:
 
 The admin interface has been updated to show:
 
-1. **Profile Admin**: 
+1. **Profile Admin**:
    - Email status column showing the latest event with color coding
    - Email Status fieldset showing all email metrics
 
