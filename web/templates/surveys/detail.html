@@ -130,7 +130,19 @@
               requiredCheckboxQuestions.forEach(function(question) {
                   if (!document.querySelectorAll(`input[name="${question.id}"]:checked`).length) {
                       e.preventDefault();
-                      alert(`Please answer: ${question.text}`);
+                      // Use a more secure notification instead of alert
+                      const errorDiv = document.createElement('div');
+                      errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4';
+                      errorDiv.textContent = `Please answer: ${sanitizeText(question.text)}`;
+                      form.insertBefore(errorDiv, form.firstChild);
+
+                      // Remove error message after 5 seconds
+                      setTimeout(() => {
+                          if (errorDiv.parentNode) {
+                              errorDiv.parentNode.removeChild(errorDiv);
+                          }
+                      }, 5000);
+
                       return false;
                   }
               });

@@ -157,19 +157,10 @@
   {% if cart.items.all %}
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        // Debug output for Stripe key
-        console.log('[Debug] Template variables:', {
-            hasStripeKey: '{{ stripe_public_key }}' !== '',
-            stripeKeyValue: '{{ stripe_public_key }}'
-        });
-
         let stripe;
         try {
-            console.log('[Page Load] Starting cart checkout initialization');
-
             if (!('{{ stripe_public_key }}')) {
-                console.error('[Error] No Stripe public key provided');
-                throw new Error('Stripe public key is missing');
+                throw new Error('Payment system configuration error');
             }
 
             // Initialize Stripe object
@@ -182,9 +173,7 @@
             document
                 .querySelector("#checkout-form")
                 .addEventListener("submit", handleSubmit);
-            console.log('[Setup] Event listeners attached');
         } catch (error) {
-            console.error('[Fatal Error]', error);
             const messageDiv = document.querySelector("#payment-message");
             if (messageDiv) {
                 messageDiv.textContent = "Payment system initialization failed. Please try again later.";
@@ -193,23 +182,15 @@
         }
 
         async function initialize() {
-            console.log('[Initialize] Starting Stripe Elements initialization');
             try {
-                console.log('[Initialize] Fetching payment intent from:', "{% url 'create_cart_payment_intent' %}");
                 const response = await fetch("{% url 'create_cart_payment_intent' %}");
                 const data = await response.json();
-                console.log('[Initialize] Payment intent response:', {
-                    status: response.status,
-                    hasClientSecret: !!data.clientSecret,
-                    error: data.error
-                });
 
                 const {
                     clientSecret
                 } = data;
 
                 if (!clientSecret) {
-                    console.error('[Initialize] No client secret received');
                     showMessage("Failed to initialize payment. Please try again.");
                     return;
                 }
@@ -217,50 +198,33 @@
                 const appearance = {
                     theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
                 };
-                console.log('[Initialize] Creating Stripe elements with appearance:', appearance);
 
                 elements = stripe.elements({
                     appearance,
                     clientSecret
                 });
                 const paymentElement = elements.create("payment");
-                console.log('[Initialize] Payment element created');
-
-                paymentElement.on('ready', function(event) {
-                    console.log('[Initialize] Payment element ready');
-                });
-
-                paymentElement.on('change', function(event) {
-                    console.log('[Payment Element] Change event:', event);
-                });
 
                 paymentElement.mount("#payment-element");
-                console.log('[Initialize] Payment element mounted');
             } catch (error) {
-                console.error('[Initialize] Error:', error);
                 showMessage("Failed to initialize payment system. Please try again.");
             }
         }
 
         async function handleSubmit(e) {
-            console.log('[Submit] Starting form submission');
             e.preventDefault();
             setLoading(true);
 
             const form = document.getElementById('checkout-form');
             const isAuthenticated = form.dataset.isAuthenticated === 'true';
-            console.log('[Submit] User authentication status:', isAuthenticated);
 
             const confirmParams = {
                 return_url: window.location.origin + "{% url 'checkout_success' %}"
             };
-            console.log('[Submit] Return URL:', confirmParams.return_url);
 
             if (!isAuthenticated) {
                 const emailInput = document.getElementById('email');
-                console.log('[Submit] Guest checkout - Email provided:', !!emailInput?.value);
                 if (!emailInput || !emailInput.value) {
-                    console.log('[Submit] No email provided for guest checkout');
                     const messageDiv = document.querySelector("#payment-message");
                     messageDiv.textContent = "Please enter your email address.";
                     messageDiv.classList.add("text-red-500");
@@ -277,7 +241,7 @@
             const countryInput = document.getElementById('country');
             if (addressInput && cityInput && stateInput && postalCodeInput && countryInput) {
                 confirmParams.shipping = {
-                    name: isAuthenticated ? '{{ request.user.get_full_name }}' : 'Guest',
+                    name: isAuthenticated ? '{{ request.user.get_full_name|escapejs }}' : 'Guest',
                     address: {
                         line1: addressInput.value,
                         city: cityInput.value,
@@ -289,7 +253,6 @@
             }
 
             try {
-                console.log('[Submit] Confirming payment with params:', confirmParams);
                 const {
                     error
                 } = await stripe.confirmPayment({
@@ -297,23 +260,18 @@
                     confirmParams
                 });
 
+                const messageDiv = document.querySelector("#payment-message");
                 if (error) {
-                    console.error('[Submit] Payment error:', error);
-                    const messageDiv = document.querySelector("#payment-message");
                     messageDiv.textContent = error.message;
                     messageDiv.classList.add("text-red-500");
                 } else {
-                    console.log('[Submit] No immediate error, waiting for redirect');
-                    const messageDiv = document.querySelector("#payment-message");
                     messageDiv.textContent = "Processing payment...";
                     messageDiv.classList.remove("text-red-500");
                     messageDiv.classList.add("text-blue-500");
                 }
             } catch (e) {
-                console.error('[Submit] Unexpected error:', e);
                 const messageDiv = document.querySelector("#payment-message");
-                Sentry.captureException(e);
-                messageDiv.textContent = "An unexpected error occurred on the cart page. Please try again.";
+                messageDiv.textContent = "An unexpected error occurred. Please try again.";
                 messageDiv.classList.add("text-red-500");
             }
 
