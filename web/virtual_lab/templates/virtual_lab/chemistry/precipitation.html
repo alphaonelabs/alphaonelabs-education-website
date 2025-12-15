@@ -1,0 +1,52 @@
+{# templates/virtual_lab/chemistry/precipitation.html #}
+{% extends "virtual_lab/layout.html" %}
+
+{% load static %}
+{% load i18n %}
+
+{% block virtual_lab_content %}
+  <div class="max-w-5xl mx-auto py-10 px-4">
+    <h1 class="text-3xl font-bold mb-6">{% trans "Precipitation Reaction" %}</h1>
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Controls Panel -->
+      <div class="space-y-4">
+        <button id="add-reagent"
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition">
+          {% trans "Add Reagent" %}
+        </button>
+        <button id="stir-btn"
+                disabled
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition opacity-50">
+          {% trans "Stir Solution" %}
+        </button>
+        <button id="reset-btn"
+                class="w-full bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded transition">
+          {% trans "Reset" %}
+        </button>
+        <div id="hint" class="mt-4 text-lg font-medium text-gray-700 italic">{% trans "Click Add Reagent to begin." %}</div>
+        <div id="property" class="mt-2 text-xl font-semibold text-gray-800"></div>
+      </div>
+      <!-- Canvas Area -->
+      <div class="col-span-2 relative">
+        <!-- swirling effect -->
+        <canvas id="swirl-canvas"
+                width="600"
+                height="400"
+                class="absolute top-0 left-0 pointer-events-none"></canvas>
+        <!-- precipitate particles -->
+        <canvas id="precip-canvas"
+                width="600"
+                height="400"
+                class="absolute top-0 left-0 pointer-events-none"></canvas>
+        <!-- beaker outline -->
+        <canvas id="beaker-canvas"
+                width="600"
+                height="400"
+                class="border rounded bg-white shadow"></canvas>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'virtual_lab/js/chemistry/precipitation.js' %}"></script>
+{% endblock %}

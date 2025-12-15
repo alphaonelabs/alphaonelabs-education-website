@@ -171,7 +171,7 @@
           {% endif %}
         </div>
         <!-- Password Fields -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-[repeat(auto-fit,_minmax(240px,_1fr))] gap-3">
           <div>
             <label for="id_password1"
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -183,7 +183,7 @@
                      id="id_password1"
                      required
                      class="mt-1 block w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white sm:text-sm pr-10"
-                     placeholder="Choose a strong password" />
+                     placeholder="Create a strong password" />
             </div>
             {% if form.password1.errors %}
               <p class="mt-1 text-xs text-red-600">{{ form.password1.errors|join:", " }}</p>

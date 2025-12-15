@@ -1,5 +1,8 @@
 import re
+from typing import ClassVar
+from urllib.parse import parse_qs, urlparse
 
+import bleach
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from cryptography.fernet import Fernet
@@ -45,9 +48,13 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
+    VideoRequest,
+    VirtualClassroom,
+    VirtualClassroomCustomization,
     WaitingRoom,
 )
 from .referrals import handle_referral
@@ -84,6 +91,7 @@ __all__ = [
     "ForumTopicForm",
     "BlogPostForm",
     "MessageTeacherForm",
+    "VideoRequestForm",
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
@@ -101,9 +109,24 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "SurveyForm",
+    "VirtualClassroomForm",
+    "VirtualClassroomCustomizationForm",
 ]
 
 fernet = Fernet(settings.SECURE_MESSAGE_KEY)
+
+
+class TailwindWidgetMixin:
+    """Mixin providing common Tailwind CSS classes for form widgets."""
+
+    @staticmethod
+    def get_tailwind_attrs():
+        return (
+            "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 "
+            "focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-white "
+            "border-gray-300 dark:border-gray-600 dark:focus:ring-blue-400"
+        )
 
 
 class AccountDeleteForm(forms.Form):
@@ -284,19 +307,23 @@ class UserRegistrationForm(SignupForm):
         return user
 
 
-class TailwindInput(forms.widgets.Input):
+class TailwindInput(forms.widgets.Input, TailwindWidgetMixin):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+            {
+                "class": self.get_tailwind_attrs(),
+            }
         )
         super().__init__(*args, **kwargs)
 
 
-class TailwindURLInput(URLInput):
+class TailwindURLInput(URLInput, TailwindWidgetMixin):
     # This widget, subclassing URLInput, ensures input type="url"
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+            {
+                "class": self.get_tailwind_attrs(),
+            }
         )
         super().__init__(*args, **kwargs)
 
@@ -802,20 +829,26 @@ class CustomLoginForm(LoginForm):
 class EducationalVideoForm(forms.ModelForm):
     """
     Form for creating and editing educational videos.
-    Validates that video URLs are from YouTube or Vimeo with proper video ID formats.
+    Validates that video URLs are from YouTube or Vimeo.
     """
+
+    # Make description optional in the form
+    description = forms.CharField(
+        required=False,
+        widget=TailwindTextarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "Describe what viewers will learn from this video (optional)",
+            }
+        ),
+        help_text="Optional – what this video is about",
+    )
 
     class Meta:
         model = EducationalVideo
         fields = ["title", "description", "video_url", "category"]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Video title"}),
-            "description": TailwindTextarea(
-                attrs={
-                    "rows": 4,
-                    "placeholder": "Describe what viewers will learn from this video",
-                }
-            ),
             "video_url": TailwindInput(attrs={"placeholder": "YouTube or Vimeo URL", "type": "url"}),
             "category": TailwindSelect(
                 attrs={
@@ -829,18 +862,48 @@ class EducationalVideoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Order subjects by name
+
+        # Order subjects by 'order' first, then alphabetically by 'name'
         self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
 
     def clean_video_url(self):
-        url = self.cleaned_data.get("video_url")
-        if url:
-            # More robust validation with regex
-            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}.*$"
-            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/[0-9]{8,}.*$"
-            if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
-                raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
-        return url
+        url = self.cleaned_data.get("video_url", "").strip()
+        if not url:
+            return url  # let required validation handle empties
+
+        parsed = urlparse(url)
+        host = parsed.netloc.lower()
+
+        # YouTube validation
+        if host == "youtube.com" or host == "www.youtube.com":
+            # Standard YouTube URLs with ?v= parameter
+            qs = parse_qs(parsed.query)
+            vid = qs.get("v", [""])[0]
+            if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                return url
+
+            # YouTube embed URLs like /embed/VIDEO_ID
+            if parsed.path.startswith("/embed/"):
+                vid = parsed.path[7:]  # Remove "/embed/"
+                if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                    return url
+
+        # YouTube short URL validation
+        if host == "youtu.be":
+            vid = parsed.path.lstrip("/")
+            if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                return url
+
+        # Vimeo validation
+        if host == "vimeo.com" or host == "www.vimeo.com":
+            path_parts = parsed.path.lstrip("/").split("/")
+            vid = path_parts[-1]  # Get the last part of the path
+
+            # Handle both /VIDEO_ID and /video/VIDEO_ID formats
+            if vid.isdigit() and len(vid) >= 8:
+                return url
+
+        raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
 
 
 class SuccessStoryForm(forms.ModelForm):
@@ -1842,3 +1905,182 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class VideoRequestForm(forms.ModelForm):
+    """Form for users to request educational videos on specific topics, with XSS protection."""
+
+    ALLOWED_TAGS: ClassVar[list[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
+    ALLOWED_ATTRIBUTES: ClassVar[dict[str, list[str]]] = {
+        # Only allow href, title and target attributes on anchor tags for security
+        "a": ["href", "title", "target"],
+    }
+
+    class Meta:
+        model = VideoRequest
+        fields = ["title", "description", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Title of the video you're requesting"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": (
+                        "Describe what you'd like to learn from this video "
+                        "(e.g., 'I'd like a video on calculus basics')",
+                    ),
+                }
+            ),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500",
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Subject.objects.all().order_by("name")
+
+    def clean_title(self) -> str:
+        title = self.cleaned_data.get("title", "")  # Added default value
+        # Strip all tags to ensure title contains only plain text
+        return bleach.clean(title, tags=self.ALLOWED_TAGS, attributes=self.ALLOWED_ATTRIBUTES, strip=True)
+
+    def clean_description(self) -> str:
+        description = self.cleaned_data.get("description", "")
+        return bleach.clean(
+            description,
+            tags=self.ALLOWED_TAGS,
+            attributes=self.ALLOWED_ATTRIBUTES,
+            strip=True,
+        )
+
+
+class SurveyForm(forms.ModelForm):
+    title = forms.CharField(
+        max_length=200,
+        widget=TailwindInput(attrs={"placeholder": "Enter survey title"}),
+        help_text="Give your survey a clear and descriptive title",
+    )
+
+    class Meta:
+        model = Survey
+        fields = ["title"]
+
+    def clean_title(self) -> str:
+        title = self.cleaned_data.get("title")
+        if len(title) < 5:
+            raise forms.ValidationError(_("Title too short"), code="invalid_length", params={"min_length": 5})
+        return title
+
+
+class VirtualClassroomForm(forms.ModelForm):
+    """Form for creating and editing virtual classrooms."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["course"].queryset = Course.objects.filter(teacher=user)
+
+    class Meta:
+        model = VirtualClassroom
+        fields = ["name", "course", "max_students"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "w-full px-4 py-2 border border-gray-300"
+                    "dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+                }
+            ),
+            "course": forms.Select(
+                attrs={
+                    "class": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                    " rounded-lg focus:ring-2 focus:ring-blue-500"
+                }
+            ),
+            "max_students": forms.NumberInput(
+                attrs={
+                    "class": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                    " rounded-lg focus:ring-2 focus:ring-blue-500"
+                }
+            ),
+        }
+
+
+class VirtualClassroomCustomizationForm(forms.ModelForm):
+    """Form for customizing virtual classroom appearance."""
+
+    class Meta:
+        model = VirtualClassroomCustomization
+        fields = [
+            "wall_color",
+            "floor_color",
+            "desk_color",
+            "chair_color",
+            "board_color",
+            "number_of_rows",
+            "desks_per_row",
+            "has_plants",
+            "has_windows",
+            "has_bookshelf",
+            "has_clock",
+            "has_carpet",
+        ]
+        widgets = {
+            "wall_color": forms.TextInput(attrs={"type": "color", "class": "w-full h-10 rounded-lg cursor-pointer"}),
+            "floor_color": forms.TextInput(attrs={"type": "color", "class": "w-full h-10 rounded-lg cursor-pointer"}),
+            "desk_color": forms.TextInput(attrs={"type": "color", "class": "w-full h-10 rounded-lg cursor-pointer"}),
+            "chair_color": forms.TextInput(attrs={"type": "color", "class": "w-full h-10 rounded-lg cursor-pointer"}),
+            "board_color": forms.TextInput(attrs={"type": "color", "class": "w-full h-10 rounded-lg cursor-pointer"}),
+            "number_of_rows": forms.NumberInput(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 "
+                        "rounded-lg focus:ring-2 focus:ring-blue-500"
+                    ),
+                    "min": "1",
+                    "max": "10",
+                }
+            ),
+            "desks_per_row": forms.NumberInput(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 "
+                        "rounded-lg focus:ring-2 focus:ring-blue-500"
+                    ),
+                    "min": "1",
+                    "max": "8",
+                }
+            ),
+            "has_plants": forms.CheckboxInput(
+                attrs={"class": "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"}
+            ),
+            "has_windows": forms.CheckboxInput(
+                attrs={"class": "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"}
+            ),
+            "has_bookshelf": forms.CheckboxInput(
+                attrs={"class": "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"}
+            ),
+            "has_clock": forms.CheckboxInput(
+                attrs={"class": "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"}
+            ),
+            "has_carpet": forms.CheckboxInput(
+                attrs={"class": "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"}
+            ),
+        }
+
+    def clean_number_of_rows(self):
+        value = self.cleaned_data.get("number_of_rows")
+        if value is None or value < 1 or value > 10:
+            raise forms.ValidationError("Number of rows must be between 1 and 10.")
+        return value
+
+    def clean_desks_per_row(self):
+        value = self.cleaned_data.get("desks_per_row")
+        if value is None or value < 1 or value > 8:
+            raise forms.ValidationError("Desks per row must be between 1 and 8.")
+        return value
