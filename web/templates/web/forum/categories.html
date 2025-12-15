@@ -113,7 +113,7 @@
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 divide-y divide-gray-200 dark:divide-gray-700">
             {% for category in categories %}
               {% for topic in category.topics.all|slice:":3" %}
-                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
+                <div class="p-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150 {% if forloop.parentloop.first and forloop.first %}rounded-t-lg{% endif %} {% if forloop.parentloop.last and forloop.last %}rounded-b-lg{% endif %}">
                   <div class="flex items-start">
                     <!-- User Avatar -->
                     <div class="mr-4 hidden sm:block">
