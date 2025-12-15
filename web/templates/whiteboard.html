@@ -10,7 +10,8 @@
     <div class="flex flex-wrap items-center gap-4 mb-4">
       <div class="flex items-center gap-2">
         <label for="toolSelect" class="font-medium">Tool:</label>
-        <select id="toolSelect" class="border rounded p-1">
+        <select id="toolSelect"
+                class="border rounded p-1 dark:bg-gray-800 dark:text-white">
           <option value="pen">Pen</option>
           <option value="eraser">Eraser</option>
           <option value="highlighter">Highlighter</option>
@@ -85,10 +86,16 @@
       toolSelect.addEventListener('change', function() {
           currentTool = this.value;
           if (currentTool === 'pen') {
+              ctx.globalCompositeOperation = 'source-over';
               ctx.globalAlpha = 1.0;
           } else if (currentTool === 'highlighter') {
+              ctx.globalCompositeOperation = 'source-over';
               ctx.globalAlpha = 0.3;
+          } else if (currentTool === 'eraser') {
+              ctx.globalCompositeOperation = 'destination-out';
+              ctx.globalAlpha = 1.0;
           } else {
+              ctx.globalCompositeOperation = 'source-over';
               ctx.globalAlpha = 1.0;
           }
       });
@@ -212,12 +219,14 @@
 
           if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
               if (currentTool === 'eraser') {
-                  ctx.strokeStyle = "#FFFFFF";
+                  ctx.globalCompositeOperation = 'destination-out';
                   ctx.globalAlpha = 1.0;
               } else if (currentTool === 'pen') {
+                  ctx.globalCompositeOperation = 'source-over';
                   ctx.strokeStyle = penColor;
                   ctx.globalAlpha = 1.0;
               } else if (currentTool === 'highlighter') {
+                  ctx.globalCompositeOperation = 'source-over';
                   ctx.strokeStyle = penColor;
                   ctx.globalAlpha = 0.3;
               }
@@ -226,6 +235,7 @@
               ctx.stroke();
           } else if (currentTool === 'line' || currentTool === 'rectangle' || currentTool === 'circle' || currentTool === 'arrow') {
               restoreSnapshot();
+              ctx.globalCompositeOperation = 'source-over';
               ctx.lineWidth = penWidth;
               ctx.strokeStyle = penColor;
 
@@ -260,23 +270,27 @@
 
           if (currentTool === 'line') {
               restoreSnapshot();
+              ctx.globalCompositeOperation = 'source-over';
               ctx.beginPath();
               ctx.moveTo(startX, startY);
               ctx.lineTo(currentX, currentY);
               ctx.stroke();
           } else if (currentTool === 'rectangle') {
               restoreSnapshot();
+              ctx.globalCompositeOperation = 'source-over';
               const width = currentX - startX;
               const height = currentY - startY;
               ctx.strokeRect(startX, startY, width, height);
           } else if (currentTool === 'circle') {
               restoreSnapshot();
+              ctx.globalCompositeOperation = 'source-over';
               const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
               ctx.beginPath();
               ctx.arc(startX, startY, radius, 0, Math.PI * 2);
               ctx.stroke();
           } else if (currentTool === 'arrow') {
               restoreSnapshot();
+              ctx.globalCompositeOperation = 'source-over';
               drawArrow(startX, startY, currentX, currentY);
           }
       });

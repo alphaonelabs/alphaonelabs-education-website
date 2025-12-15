@@ -130,24 +130,25 @@ class TeachViewTests(TestCase):
         self.assertEqual(response.url, reverse("course_detail", kwargs={"slug": course.slug}))
 
     @patch("captcha.fields.CaptchaField.clean", return_value="PASSED")
-    def test_post_authenticated_email_mismatch(self, mock_captcha):
-        """Test POST for authenticated user with mismatched email"""
+    def test_form_for_authenticated_user(self, mock_captcha):
+        """Test form behavior for authenticated users - no email or captcha required"""
         self.client.login(username="testuser", password="testpass123")
 
         form_data = {
             "course_title": "Test Course",
             "course_description": "This is a test course",
-            "email": "different@example.com",
             "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
             "flexible_timing": True,
-            "captcha": "dummy",
         }
 
         response = self.client.post(self.teach_url, {**form_data, "course_image": self.get_test_image()})
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("form", response.context)
-        self.assertIn("The provided email does not match your account email", str(response.context["form"].errors))
+        # For authenticated users, we expect a successful submission without email/captcha
+        self.assertEqual(response.status_code, 302)  # Successful redirect
+
+        # Verify a course is created with the authenticated user's email
+        course = Course.objects.get(title="Test Course")
+        self.assertEqual(course.teacher, self.user)
 
     @patch("captcha.fields.CaptchaField.clean", return_value="PASSED")
     def test_post_authenticated_duplicate_title(self, mock_captcha):

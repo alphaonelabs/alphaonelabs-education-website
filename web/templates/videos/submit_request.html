@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Request a Video{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-4">Request an Educational Video</h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          Is there a particular topic you'd like to learn more about? Request a video and we'll consider creating content on that subject.
+        </p>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-6">
+            <label for="{{ form.title.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.title.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div class="mb-6">
+            <label for="{{ form.category.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+            {{ form.category }}
+            {% if form.category.errors %}
+              <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.category.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div class="mb-6">
+            <label for="{{ form.description.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+            {{ form.description }}
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Please provide details about what you'd like to learn. Example: "I'd like a video on how to take an issue from GitHub, code the solution, and submit a PR"
+            </p>
+            {% if form.description.errors %}
+              <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.description.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div class="flex justify-end">
+            <a href="{% url 'video_request_list' %}"
+               class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold py-2 px-4 rounded mr-4">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+              Submit Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

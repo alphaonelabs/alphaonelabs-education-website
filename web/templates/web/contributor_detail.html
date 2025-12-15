@@ -2,6 +2,36 @@
 
 {% block content %}
   <main class="w-full max-w-7xl mx-auto mt-6 px-4 md:px-6">
+    <nav class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-6"
+         aria-label="Breadcrumb">
+      <ol class="flex items-center space-x-2">
+        <li>
+          <a href="{% url 'index' %}"
+             class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+            <i class="fas fa-home mr-1"></i> Home
+          </a>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-4 w-4 text-gray-400"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <a href="{% url 'contributors_list_view' %}"
+             class="ml-2 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">Contributors</a>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-4 w-4 text-gray-400"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <span class="ml-2 text-gray-800 dark:text-gray-300 font-medium">{{ user.login }}</span>
+        </li>
+      </ol>
+    </nav>
     <!-- Title Section -->
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Contributor Details: {{ user.login }}</h1>
     <!-- Main Grid: Basic Info & Engagement Metrics -->

@@ -65,7 +65,7 @@
                 </div>
                 <div class="flex items-center text-gray-600 dark:text-gray-300">
                   <i class="fas fa-star text-yellow-400 mr-2"></i>
-                  <span>{{ course.average_rating|default:"N/A" }}</span>
+                  <span>{{ course.average_rating|floatformat:1|default:"N/A" }}</span>
                 </div>
               </div>
               <!-- Session Dates -->
@@ -111,7 +111,12 @@
                 </div>
               </div>
               <!-- Action Button -->
-              {% if course.invite_only %}
+              {% if user.is_authenticated and course.title in user_courses %}
+                <a href="{% url 'course_detail' course.slug %}"
+                   class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center">
+                  View Course
+                </a>
+              {% elif course.invite_only %}
                 <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center">
                   <i class="fas fa-lock mr-1"></i>
                   Invite Only
@@ -236,6 +241,7 @@
               <input type="text"
                      id="q"
                      name="q"
+                     value="{{ query|default_if_none:'' }}"
                      class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
                      placeholder="Search courses..." />
             </div>

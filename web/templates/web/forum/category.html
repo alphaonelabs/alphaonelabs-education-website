@@ -99,6 +99,22 @@
                   {{ category.name }}
                 </h1>
                 <p class="text-gray-600 dark:text-gray-400 mt-1">{{ category.description }}</p>
+                {% if user.is_superuser %}
+                  <div class="flex space-x-3 mt-2">
+                    <a href="{% url 'admin:web_forumcategory_change' category.id %}"
+                       class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
+                       target="_blank">
+                      <i class="fas fa-cog mr-1"></i>
+                      Admin Edit Category
+                    </a>
+                    <a href="{% url 'admin:web_forumcategory_delete' category.id %}"
+                       class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm flex items-center"
+                       target="_blank">
+                      <i class="fas fa-trash mr-1"></i>
+                      Admin Delete Category
+                    </a>
+                  </div>
+                {% endif %}
               </div>
               {% if user.is_authenticated %}
                 <a href="{% url 'create_topic' category.slug %}"
@@ -112,7 +128,7 @@
           <!-- Topics List -->
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm divide-y divide-gray-200 dark:divide-gray-700">
             {% for topic in topics %}
-              <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
+              <div class="p-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150 {% if forloop.first %}rounded-t-lg{% endif %} {% if forloop.last %}rounded-b-lg{% endif %}">
                 <div class="flex items-start">
                   <!-- User Avatar -->
                   <div class="mr-4 hidden sm:block">
@@ -135,16 +151,41 @@
                         <span class="font-medium text-gray-700 dark:text-gray-300">{{ topic.author.username }}</span>
                         <span class="mx-2">•</span>
                         <span class="whitespace-nowrap">{{ topic.created_at|timesince }} ago</span>
-                      </div>
-                      {% if topic.replies.exists %}
-                        <div class="text-right text-xs text-gray-500 dark:text-gray-400 hidden md:block">
+                        <span class="mx-2">•</span>
+                        <div class="flex space-x-3">
                           <span class="flex items-center">
-                            <i class="fa-solid fa-reply text-teal-300 mr-1"></i>
-                            Last reply by {{ topic.replies.last.author.username }}
-                            ({{ topic.replies.last.created_at|timesince }} ago)
+                            <i class="fa-solid fa-arrow-up text-teal-300 mr-1"></i>
+                            {{ topic.upvote_count }} upvotes
+                          </span>
+                          <span class="flex items-center">
+                            <i class="fa-solid fa-arrow-down text-red-300 mr-1"></i>
+                            {{ topic.downvote_count }} downvotes
                           </span>
                         </div>
-                      {% endif %}
+                      </div>
+                      <div class="flex space-x-2">
+                        {% if user.is_superuser %}
+                          <a href="{% url 'admin:web_forumtopic_change' topic.id %}"
+                             class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                             target="_blank">
+                            <i class="fas fa-cog"></i>
+                          </a>
+                          <a href="{% url 'admin:web_forumtopic_delete' topic.id %}"
+                             class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs"
+                             target="_blank">
+                            <i class="fas fa-trash"></i>
+                          </a>
+                        {% endif %}
+                        {% if topic.replies.exists %}
+                          <div class="text-right text-xs text-gray-500 dark:text-gray-400 hidden md:block">
+                            <span class="flex items-center">
+                              <i class="fa-solid fa-reply text-teal-300 mr-1"></i>
+                              Last reply by {{ topic.replies.last.author.username }}
+                              ({{ topic.replies.last.created_at|timesince }} ago)
+                            </span>
+                          </div>
+                        {% endif %}
+                      </div>
                     </div>
                     <h2 class="text-lg font-semibold mb-1">
                       <a href="{% url 'forum_topic' category.slug topic.id %}"

@@ -56,9 +56,12 @@
               <input type="file" id="image-input" name="images" multiple accept="image/*" />
             </div>
             <div id="image-preview" class="grid grid-cols-4 gap-2 mt-2">
-              {% for image in product.images.all %}
-                <img src="{{ image.url }}"
-                     class="w-20 h-20 rounded-lg object-cover border shadow-sm" />
+              {% for image in product.goods_images.all %}
+                <img src="{{ image.image.url }}"
+                     class="w-20 h-20 rounded-lg object-cover border shadow-sm"
+                     alt="Product image"
+                     width="80"
+                     height="80" />
               {% endfor %}
             </div>
           </div>

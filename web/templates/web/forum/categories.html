@@ -39,12 +39,22 @@
               </li>
               {% for category in categories %}
                 <li>
-                  <a href="{% url 'forum_category' slug=category.slug %}"
-                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fa-solid {{ category.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
-                    {{ category.name }}
-                    <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ category.topics.count }}</span>
-                  </a>
+                  <div class="flex items-center">
+                    <a href="{% url 'forum_category' slug=category.slug %}"
+                       class="flex-grow flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                      <i class="fa-solid {{ category.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
+                      {{ category.name }}
+                      <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ category.topics.count }}</span>
+                    </a>
+                    {% if user.is_superuser %}
+                      <a href="{% url 'admin:web_forumcategory_change' category.id %}"
+                         class="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1"
+                         title="Edit in Admin"
+                         target="_blank">
+                        <i class="fas fa-cog text-xs"></i>
+                      </a>
+                    {% endif %}
+                  </div>
                 </li>
               {% endfor %}
             </ul>
@@ -80,20 +90,30 @@
               <h1 class="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">Forum Categories</h1>
               <p class="text-gray-600 dark:text-gray-400">Browse all categories or select one to see its topics</p>
             </div>
-            {% if user.is_authenticated %}
-              <a href="{% url 'create_forum_category' %}"
-                 class="bg-teal-300 hover:bg-teal-400 text-white font-semibold px-4 py-2 rounded-lg flex items-center transition duration-200">
-                <i class="fa-solid fa-folder-plus mr-2"></i>
-                Create Category
-              </a>
-            {% endif %}
+            <div class="flex space-x-3">
+              {% if user.is_authenticated %}
+                <a href="{% url 'create_forum_category' %}"
+                   class="bg-teal-300 hover:bg-teal-400 text-white font-semibold px-4 py-2 rounded-lg flex items-center transition duration-200">
+                  <i class="fa-solid fa-folder-plus mr-2"></i>
+                  Create Category
+                </a>
+              {% endif %}
+              {% if user.is_superuser %}
+                <a href="{% url 'admin:web_forumcategory_changelist' %}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center transition duration-200"
+                   target="_blank">
+                  <i class="fa-solid fa-cog mr-2"></i>
+                  Manage Categories
+                </a>
+              {% endif %}
+            </div>
           </div>
           <!-- Recent Topics from All Categories -->
           <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">Recent Discussions</h2>
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 divide-y divide-gray-200 dark:divide-gray-700">
             {% for category in categories %}
               {% for topic in category.topics.all|slice:":3" %}
-                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
+                <div class="p-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150 {% if forloop.parentloop.first and forloop.first %}rounded-t-lg{% endif %} {% if forloop.parentloop.last and forloop.last %}rounded-b-lg{% endif %}">
                   <div class="flex items-start">
                     <!-- User Avatar -->
                     <div class="mr-4 hidden sm:block">
@@ -120,6 +140,22 @@
                           <a href="{% url 'forum_category' slug=category.slug %}"
                              class="text-teal-300 hover:text-teal-400 font-medium">{{ category.name }}</a>
                         </div>
+                        {% if user.is_superuser %}
+                          <div class="flex space-x-2">
+                            <a href="{% url 'admin:web_forumtopic_change' topic.id %}"
+                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                               target="_blank"
+                               title="Edit Topic in Admin">
+                              <i class="fas fa-cog"></i>
+                            </a>
+                            <a href="{% url 'admin:web_forumtopic_delete' topic.id %}"
+                               class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs"
+                               target="_blank"
+                               title="Delete Topic in Admin">
+                              <i class="fas fa-trash"></i>
+                            </a>
+                          </div>
+                        {% endif %}
                       </div>
                       <h3 class="text-base font-semibold mb-1 truncate">
                         <a href="{% url 'forum_topic' category.slug topic.id %}"
@@ -140,6 +176,14 @@
                         <span class="flex items-center">
                           <i class="fa-solid fa-comments mr-1"></i>
                           {{ topic.replies.count }} replies
+                        </span>
+                        <span class="flex items-center">
+                          <i class="fa-solid fa-arrow-up text-teal-300 mr-1"></i>
+                          {{ topic.upvote_count }} upvotes
+                        </span>
+                        <span class="flex items-center">
+                          <i class="fa-solid fa-arrow-down text-red-300 mr-1"></i>
+                          {{ topic.downvote_count }} downvotes
                         </span>
                         {% if topic.replies.count > 0 %}
                           <span class="flex items-center">

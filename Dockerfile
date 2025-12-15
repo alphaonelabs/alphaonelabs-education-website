@@ -1,5 +1,5 @@
 # Python base image
-FROM python:3.10-slim
+FROM python:3.10-slim@sha256:f9fd9a142c9e3bc54d906053b756eb7e7e386ee1cf784d82c251cf640c502512
 
 # Set working directory
 WORKDIR /app
@@ -9,10 +9,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN python -m pip install --upgrade pip && \
-    python -m pip install -r requirements.txt
+# Copy only dependency manifests first (better layer caching)
+COPY pyproject.toml poetry.lock* ./
+
+# Install Poetry and project dependencies (system deps minimal here; app build image)
+RUN python -m pip install --upgrade pip wheel setuptools && \
+    pip install poetry==1.8.3 && \
+    poetry config virtualenvs.create false --local || true && \
+    poetry install --only main --no-interaction --no-ansi
 
 # Copy project files
 COPY . .

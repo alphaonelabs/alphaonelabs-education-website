@@ -4,14 +4,30 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
+from django.views.generic.base import RedirectView
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
+from .secure_messaging import (
+    compose_message,
+    download_message,
+    inbox,
+    messaging_dashboard,
+    send_encrypted_message,
+    toggle_star_message,
+)
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
+    SurveyCreateView,
+    SurveyDeleteView,
+    SurveyDetailView,
+    SurveyListView,
+    SurveyResultsView,
     add_goods_to_cart,
+    apply_discount_via_referrer,
+    classroom_attendance,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -20,12 +36,18 @@ from .views import (
     sales_analytics,
     sales_data,
     streak_detail,
+    submit_survey,
+    update_session_attendance,
+    update_student_attendance,
 )
 
 # Non-prefixed URLs
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("markdownx/", include("markdownx.urls")),
+    # GitHub webhook (non-localized stable endpoint)
+    path("github_update/", views.github_update, name="github_update"),
 ]
 
 if settings.DEBUG:
@@ -36,6 +58,7 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path("ref/<str:code>/", views.handle_referral, name="handle_referral"),  # New referral URL format
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
@@ -75,6 +98,7 @@ urlpatterns += i18n_patterns(
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
+    # SURVEY URLs
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
@@ -96,11 +120,29 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    path("messaging/dashboard/", messaging_dashboard, name="messaging_dashboard"),
+    path("messaging/compose/", compose_message, name="compose_message"),
+    path("secure/send/", send_encrypted_message, name="send_encrypted_message"),
+    path("secure/inbox/", inbox, name="inbox"),
+    path("secure/download/<int:message_id>/", download_message, name="download_message"),
+    path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
+    # Virtual Lab Links
+    path("virtual_lab/", include("web.virtual_lab.urls", namespace="virtual_lab")),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
+    # Video URLs
+    path("videos/requests/", views.video_request_list, name="video_request_list"),
+    path("videos/requests/submit/", login_required(views.submit_video_request), name="submit_video_request"),
+    # SURVEY URLs
+    path("surveys/", SurveyListView.as_view(), name="surveys"),
+    path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
+    path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
+    path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
+    path("surveys/<int:pk>/submit/", submit_survey, name="submit-survey"),
+    path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -108,12 +150,13 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
+    # discount
+    path("discounts/apply/", apply_discount_via_referrer, name="apply_discount_via_referrer"),
     # Avatar customization
     path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
     path("avatar/preview/", views_avatar.preview_avatar, name="preview_avatar"),
     # Admin and Utilities
-    path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
     path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
@@ -181,6 +224,17 @@ urlpatterns += i18n_patterns(
         views.create_course_from_waiting_room,
         name="create_course_from_waiting_room",
     ),
+    # Session Waiting Room URLs
+    path(
+        "courses/<slug:course_slug>/session-waiting-room/join/",
+        views.join_session_waiting_room,
+        name="join_session_waiting_room",
+    ),
+    path(
+        "courses/<slug:course_slug>/session-waiting-room/leave/",
+        views.leave_session_waiting_room,
+        name="leave_session_waiting_room",
+    ),
     # Progress Visualization
     path("dashboard/progress/", views.progress_visualization, name="progress_visualization"),
     # Forum URLs
@@ -198,6 +252,8 @@ urlpatterns += i18n_patterns(
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
+    path("forum/topic/<int:pk>/vote/", views.topic_vote, name="topic_vote"),
+    path("forum/reply/<int:pk>/vote/", views.reply_vote, name="reply_vote"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -241,7 +297,6 @@ urlpatterns += i18n_patterns(
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("cart/payment-intent/", views.create_cart_payment_intent, name="create_cart_payment_intent"),
     path("cart/checkout/success/", views.checkout_success, name="checkout_success"),
-    path("markdownx/", include("markdownx.urls")),
     # Course Invitation URLs
     path("courses/<int:course_id>/invite/", views.invite_student, name="invite_student"),
     path("terms/", views.terms, name="terms"),
@@ -261,9 +316,9 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
-    path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
-    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
+    path("videos/upload/", views.upload_educational_video, name="upload_educational_video"),
+    path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(
@@ -307,6 +362,7 @@ urlpatterns += i18n_patterns(
     path("memes/<slug:slug>/", views.meme_detail, name="meme_detail"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    path("sync_github_milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Team Collaboration URLs
     path("teams/", views.team_goals, name="team_goals"),
     path("teams/create/", views.create_team_goal, name="create_team_goal"),
@@ -389,9 +445,14 @@ urlpatterns += i18n_patterns(
         name="mark_session_completed",
     ),
     path(
-        "update_student_attendance/",
-        views.update_student_attendance,
-        name="update_student_attendance",
+        "update_student_attendance/<int:classroom_id>/",
+        RedirectView.as_view(pattern_name="update_student_attendance", permanent=False),
+        name="update_student_attendance_legacy",
+    ),
+    path(
+        "update_session_attendance/",
+        update_session_attendance,
+        name="update_session_attendance",
     ),
     path(
         "get_student_attendance/",
@@ -417,6 +478,8 @@ urlpatterns += i18n_patterns(
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
+    # Contributors
+    path("contributors/", views.contributors_list_view, name="contributors_list_view"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
@@ -425,16 +488,141 @@ urlpatterns += i18n_patterns(
         views.create_membership_subscription,
         name="create_membership_subscription",
     ),
-    path("membership/success/", views.membership_success, name="membership_success"),
-    path("membership/settings/", views.membership_settings, name="membership_settings"),
-    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
-    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
-    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
-    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
-    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    path(
+        "membership/success/",
+        views.membership_success,
+        name="membership_success",
+    ),
+    path(
+        "membership/settings/",
+        views.membership_settings,
+        name="membership_settings",
+    ),
+    path(
+        "membership/cancel/",
+        views.cancel_membership,
+        name="cancel_membership",
+    ),
+    path(
+        "membership/reactivate/",
+        views.reactivate_membership,
+        name="reactivate_membership",
+    ),
+    path(
+        "membership/update-payment-method/",
+        views.update_payment_method,
+        name="update_payment_method",
+    ),
+    path(
+        "membership/update-payment-method/api/",
+        views.update_payment_method_api,
+        name="update_payment_method_api",
+    ),
+    path(
+        "test-sentry-error/",
+        lambda _request: 1 / 0,
+        name="test_sentry",
+    ),
+    # Virtual Classroom URLs
+    path(
+        "virtual-classroom/",
+        login_required(views.virtual_classroom_list),
+        name="virtual_classroom_list",
+    ),
+    path(
+        "virtual-classroom/create/",
+        login_required(views.virtual_classroom_create),
+        name="virtual_classroom_create",
+    ),
+    path(
+        "virtual-classroom/global/join/",
+        login_required(views.join_global_virtual_classroom),
+        name="join_global_virtual_classroom",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/",
+        login_required(views.virtual_classroom_detail),
+        name="virtual_classroom_detail",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/edit/",
+        login_required(views.virtual_classroom_edit),
+        name="virtual_classroom_edit",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/customize/",
+        login_required(views.virtual_classroom_customize),
+        name="virtual_classroom_customize",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/delete/",
+        login_required(views.virtual_classroom_delete),
+        name="virtual_classroom_delete",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/blackboard/",
+        login_required(views.classroom_blackboard),
+        name="classroom_blackboard",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/attendance/",
+        login_required(classroom_attendance),
+        name="classroom_attendance",
+    ),
+    path(
+        "attendance/<int:classroom_id>/update/",
+        login_required(update_student_attendance),
+        name="update_student_attendance",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/reset-attendance/",
+        login_required(views.reset_attendance),
+        name="reset_attendance",
+    ),
+    # Whiteboard URLs (nested under virtual-classroom)
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/",
+        login_required(views_whiteboard.classroom_whiteboard),
+        name="classroom_whiteboard",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/data/",
+        login_required(views_whiteboard.get_whiteboard_data),
+        name="get_whiteboard_data",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/save/",
+        login_required(views_whiteboard.save_whiteboard_data),
+        name="save_whiteboard_data",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/clear/",
+        login_required(views_whiteboard.clear_whiteboard),
+        name="clear_whiteboard",
+    ),
+    # Legacy whiteboard URL redirects (temporary)
+    path(
+        "whiteboard/<int:classroom_id>/",
+        RedirectView.as_view(pattern_name="classroom_whiteboard", permanent=False),
+        name="classroom_whiteboard_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/data/",
+        RedirectView.as_view(pattern_name="get_whiteboard_data", permanent=False),
+        name="get_whiteboard_data_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/save/",
+        RedirectView.as_view(pattern_name="save_whiteboard_data", permanent=False),
+        name="save_whiteboard_data_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/clear/",
+        RedirectView.as_view(pattern_name="clear_whiteboard", permanent=False),
+        name="clear_whiteboard_legacy",
+    ),
     prefix_default_language=True,
 )
 
 handler404 = "web.views.custom_404"
-handler500 = "web.views.custom_500"
 handler429 = "web.views.custom_429"

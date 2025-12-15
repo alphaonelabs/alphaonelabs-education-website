@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Back to Classroom Button -->
+    <div class="mb-4">
+      <a href="{% url 'virtual_classroom_detail' classroom_id=classroom.id %}"
+         class="inline-flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">
+        <svg class="w-5 h-5 mr-2"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Classroom
+      </a>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <!-- Teacher Name -->
+      <div class="mb-8 text-center">
+        <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300">
+          {% if teacher.get_full_name %}
+            {{ teacher.get_full_name }}
+          {% else %}
+            {{ teacher.username }}
+          {% endif %}
+          <span class="text-gray-600 dark:text-gray-400">(Teacher)</span>
+        </h2>
+      </div>
+      <!-- Attendance List -->
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300">Students Present Today</h3>
+          {% if is_teacher %}
+            <form method="POST"
+                  action="{% url 'reset_attendance' classroom_id=classroom.id %}"
+                  onsubmit="return confirm('Are you sure you want to reset today\'s attendance? This cannot be undone.');">
+              {% csrf_token %}
+              <button type="submit"
+                      class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                Reset Today's Attendance
+              </button>
+            </form>
+          {% endif %}
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          {% if present_students %}
+            <ul class="space-y-2">
+              {% for student in present_students %}
+                <li class="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+                  <span class="text-green-600">✓</span>
+                  {% if student.get_full_name %}
+                    <span>{{ student.get_full_name }}</span>
+                  {% else %}
+                    <span>{{ student.username }}</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-gray-500 dark:text-gray-400 italic">No students have marked attendance yet today.</p>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Mark Attendance Button -->
+      {% if is_enrolled and request.user not in present_students %}
+        <div class="text-center">
+          <form method="POST"
+                action="{% url 'update_student_attendance' classroom_id=classroom.id %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+              Mark Attendance
+            </button>
+          </form>
+        </div>
+      {% endif %}
+      <!-- All Enrolled Students -->
+      {% if is_teacher %}
+        <div class="mt-8">
+          <h3 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">All Enrolled Students</h3>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            {% if enrolled_students %}
+              <ul class="space-y-2">
+                {% for student in enrolled_students %}
+                  <li class="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+                    {% if student in present_students %}
+                      <span class="text-green-600 w-6">✓</span>
+                    {% else %}
+                      <span class="text-red-600 w-6">✗</span>
+                    {% endif %}
+                    {% if student.get_full_name %}
+                      <span>{{ student.get_full_name }}</span>
+                    {% else %}
+                      <span>{{ student.username }}</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-gray-500 dark:text-gray-400 italic">No students enrolled in this class.</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
