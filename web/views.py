@@ -881,9 +881,7 @@ def course_detail(request, slug):
     if request.user.is_authenticated:
         for material in course.materials.all():
             if material.unlock_by_sharing:
-                verified_shares = material.share_unlocks.filter(
-                    user=request.user, is_verified=True
-                ).count()
+                verified_shares = material.share_unlocks.filter(user=request.user, is_verified=True).count()
                 material_unlock_status[material.id] = {
                     "is_unlocked": verified_shares >= material.shares_required,
                     "shares_count": verified_shares,
@@ -979,9 +977,7 @@ def create_material_share_token(request, material_id):
 
     # Create or get existing share token
     share_unlock, created = ShareUnlock.objects.get_or_create(
-        user=request.user,
-        material=material,
-        defaults={"platform": request.POST.get("platform", "twitter")}
+        user=request.user, material=material, defaults={"platform": request.POST.get("platform", "twitter")}
     )
 
     # Generate share URL
@@ -992,12 +988,14 @@ def create_material_share_token(request, material_id):
     # Generate share text
     share_text = f"Check out this awesome course material: {material.title} from {material.course.title}!"
 
-    return JsonResponse({
-        "success": True,
-        "share_token": share_unlock.share_token,
-        "share_url": share_url,
-        "share_text": share_text,
-    })
+    return JsonResponse(
+        {
+            "success": True,
+            "share_token": share_unlock.share_token,
+            "share_url": share_url,
+            "share_text": share_text,
+        }
+    )
 
 
 @require_GET
@@ -1012,10 +1010,7 @@ def verify_material_share(request, share_token):
         share_unlock.save()
 
     # Redirect to the course detail page
-    messages.success(
-        request,
-        f"Thank you for sharing! You've unlocked: {share_unlock.material.title}"
-    )
+    messages.success(request, f"Thank you for sharing! You've unlocked: {share_unlock.material.title}")
     return redirect("course_detail", slug=share_unlock.material.course.slug)
 
 

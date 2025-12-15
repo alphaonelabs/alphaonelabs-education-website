@@ -507,16 +507,15 @@ class CourseMaterialAdmin(admin.ModelAdmin):
     raw_id_fields = ("course", "session")
 
     fieldsets = (
-        (None, {
-            "fields": ("course", "session", "title", "description", "material_type", "file", "external_url")
-        }),
-        ("Settings", {
-            "fields": ("order", "is_downloadable", "requires_enrollment", "unlock_by_sharing", "shares_required")
-        }),
-        ("Assignment Settings", {
-            "fields": ("due_date", "reminder_sent", "final_reminder_sent"),
-            "classes": ("collapse",)
-        }),
+        (None, {"fields": ("course", "session", "title", "description", "material_type", "file", "external_url")}),
+        (
+            "Settings",
+            {"fields": ("order", "is_downloadable", "requires_enrollment", "unlock_by_sharing", "shares_required")},
+        ),
+        (
+            "Assignment Settings",
+            {"fields": ("due_date", "reminder_sent", "final_reminder_sent"), "classes": ("collapse",)},
+        ),
     )
 
 
@@ -914,10 +913,6 @@ class ShareUnlockAdmin(admin.ModelAdmin):
     readonly_fields = ("share_token", "shared_at", "verified_at")
 
     fieldsets = (
-        (None, {
-            "fields": ("user", "material", "platform")
-        }),
-        ("Share Status", {
-            "fields": ("share_token", "is_verified", "shared_at", "verified_at")
-        }),
+        (None, {"fields": ("user", "material", "platform")}),
+        ("Share Status", {"fields": ("share_token", "is_verified", "shared_at", "verified_at")}),
     )

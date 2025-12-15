@@ -3138,6 +3138,8 @@ class ShareUnlock(models.Model):
         if not self.share_token:
             self.share_token = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         super().save(*args, **kwargs)
+
+
 class VirtualClassroom(models.Model):
     """Model for storing virtual classroom instances."""
 
