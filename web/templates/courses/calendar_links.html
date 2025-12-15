@@ -4,104 +4,119 @@
   Calendar Links - {{ session.title }}
 {% endblock title %}
 {% block content %}
-  <div class="container py-4">
-    <div class="row">
-      <div class="col-12">
-        <h1 class="mb-4">Add to Calendar</h1>
-        <h4 class="text-muted mb-3">{{ session.course.title }} - {{ session.title }}</h4>
-      </div>
+  <main class="container mx-auto px-4 py-8">
+    <div class="mb-4">
+      <h1 class="text-3xl font-bold mb-4">Add to Calendar</h1>
+      <h2 class="text-xl text-gray-600 dark:text-gray-300 mb-3">{{ session.course.title }} - {{ session.title }}</h2>
     </div>
-    <div class="row">
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Session Details</h5>
-            <p>
-              <strong>Date:</strong> {{ session.start_time|date:"F j, Y" }}
+    <div class="grid md:grid-cols-12 gap-4">
+      <div class="md:col-span-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4 text-black dark:text-white">Session Details</h2>
+            <p class="mb-2 text-black dark:text-white">
+              <strong>Date:</strong>
+              <time datetime="{{ session.start_time|date:'c' }}">{{ session.start_time|date:"F j, Y" }}</time>
             </p>
-            <p>
-              <strong>Time:</strong> {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}
+            <p class="mb-2 text-black dark:text-white">
+              <strong>Time:</strong>
+              <time datetime="{{ session.start_time|date:'c' }}">{{ session.start_time|time:"g:i A" }}</time>
+              -
+              <time datetime="{{ session.end_time|date:'c' }}">{{ session.end_time|time:"g:i A" }}</time>
+              <span class="ml-1 text-gray-500 dark:text-gray-300">({{ session.start_time|date:"e" }})</span>
             </p>
             {% if session.is_virtual %}
-              <p>
+              <p class="mb-2 text-black dark:text-white">
                 <strong>Location:</strong> Virtual (link will be provided)
               </p>
             {% elif session.location %}
-              <p>
+              <p class="mb-2 text-black dark:text-white">
                 <strong>Location:</strong> {{ session.location }}
               </p>
             {% endif %}
             <p>{{ session.description }}</p>
           </div>
         </div>
-        <div class="card mt-4">
-          <div class="card-body">
-            <h5 class="card-title">Calendar Options</h5>
-            <div class="list-group">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mt-4">
+          <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Calendar Options</h2>
+            <div class="space-y-2">
               <!-- Google Calendar -->
               <a href="{{ calendar_links.google }}"
                  target="_blank"
-                 class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                  <div>
-                    <h6 class="mb-1">Add to Google Calendar</h6>
-                    <small class="text-muted">Opens in a new window</small>
+                 rel="noopener noreferrer"
+                 class="block p-4 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center space-x-2">
+                    <i class="fab fa-google text-red-500 text-lg" aria-hidden="true"></i>
+                    <div>
+                      <p class="font-medium text-black dark:text-white">Add to Google Calendar</p>
+                    </div>
                   </div>
-                  <i class="fas fa-external-link-alt"></i>
+                  <i class="fas fa-external-link-alt text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
               <!-- Outlook Calendar -->
               <a href="{{ calendar_links.outlook }}"
                  target="_blank"
-                 class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                  <div>
-                    <h6 class="mb-1">Add to Outlook Calendar</h6>
-                    <small class="text-muted">Opens in a new window</small>
+                 rel="noopener noreferrer"
+                 class="block p-4 border rounded-lg hover:bg-gray-100 transition-colors dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center space-x-2">
+                    <!-- Outlook Icon -->
+                    <i class="fab fa-microsoft text-blue-700 text-lg" aria-hidden="true"></i>
+                    <div>
+                      <p class="font-medium text-black dark:text-white">Add to Outlook Calendar</p>
+                    </div>
                   </div>
-                  <i class="fas fa-external-link-alt"></i>
+                  <i class="fas fa-external-link-alt text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
               <!-- iCal Feed -->
               <a href="{% url 'calendar_feed' %}"
-                 class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                  <div>
-                    <h6 class="mb-1">Download iCal File</h6>
-                    <small class="text-muted">Compatible with Apple Calendar, Outlook, and other calendar apps</small>
+                 class="block p-4 border rounded-lg hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 dark:hover:bg-gray-700">
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center space-x-2">
+                    <!-- iCal / Calendar Icon -->
+                    <i class="far fa-calendar-alt text-green-600 text-lg" aria-hidden="true"></i>
+                    <div>
+                      <p class="font-medium text-black dark:text-white">Download iCal File</p>
+                    </div>
                   </div>
-                  <i class="fas fa-download"></i>
+                  <i class="fas fa-download text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Need Help?</h5>
-            <p class="card-text">
-              Choose your preferred calendar application from the options on the left. The session will be automatically added to your calendar with all the necessary details.
-            </p>
-            <h6 class="mt-3">Calendar Sync Instructions:</h6>
-            <ul class="list-unstyled">
-              <li>
-                <i class="fas fa-check text-success me-2"></i> Click your preferred calendar option
-              </li>
-              <li>
-                <i class="fas fa-check text-success me-2"></i> Review the event details
-              </li>
-              <li>
-                <i class="fas fa-check text-success me-2"></i> Click save or add to calendar
-              </li>
-              <li>
-                <i class="fas fa-check text-success me-2"></i> The session is now in your calendar!
-              </li>
-            </ul>
+      <div class="md:col-span-4">
+        <aside aria-labelledby="help-heading">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            <div class="p-6">
+              <h2 id="help-heading" class="text-xl font-semibold mb-4">Need Help?</h2>
+              <p class="text-gray-600 dark:text-gray-300 mb-4">
+                Choose your preferred calendar application from the options on the left. The session will be automatically added to your calendar with all the necessary details.
+              </p>
+              <h6 class="font-medium mt-6 mb-3 text-black dark:text-white">Calendar Sync Instructions:</h6>
+              <ol class="space-y-2">
+                <li class="flex items-center text-black dark:text-white">
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> Click your preferred calendar option
+                </li>
+                <li class="flex items-center text-black dark:text-white">
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> Review the event details
+                </li>
+                <li class="flex items-center text-black dark:text-white">
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> Click save or add to calendar
+                </li>
+                <li class="flex items-center text-black dark:text-white">
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> The session is now in your calendar!
+                </li>
+              </ol>
+            </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
-  </div>
+  </main>
 {% endblock content %}
