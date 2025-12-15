@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Only allow other interactions if not seated
                     if (!state.isSeated) {
                         let redirectUrl = '';
-                        switch(element) {
+                        switch (element) {
                             case 'blackboard':
                                 redirectUrl = `/whiteboard/${classroomId}/`;
                                 break;
@@ -124,9 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function to darken colors
     function darkenColor(hex, percent) {
-        let r = parseInt(hex.substring(1,3), 16);
-        let g = parseInt(hex.substring(3,5), 16);
-        let b = parseInt(hex.substring(5,7), 16);
+        let r = parseInt(hex.substring(1, 3), 16);
+        let g = parseInt(hex.substring(3, 5), 16);
+        let b = parseInt(hex.substring(5, 7), 16);
 
         r = Math.floor(r * (100 - percent) / 100);
         g = Math.floor(g * (100 - percent) / 100);
@@ -217,32 +217,32 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                console.log('Customization saved successfully');
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Customization saved successfully');
 
-                // Update state and constants
-                state.settings = settings;
-                COLORS.WALL = settings.wall_color;
-                COLORS.FLOOR = settings.floor_color;
-                COLORS.DESK = settings.desk_color;
-                COLORS.CHAIR = settings.chair_color;
-                COLORS.BOARD = settings.board_color;
+                    // Update state and constants
+                    state.settings = settings;
+                    COLORS.WALL = settings.wall_color;
+                    COLORS.FLOOR = settings.floor_color;
+                    COLORS.DESK = settings.desk_color;
+                    COLORS.CHAIR = settings.chair_color;
+                    COLORS.BOARD = settings.board_color;
 
-                SETTINGS.NUM_ROWS = settings.number_of_rows;
-                SETTINGS.DESKS_PER_ROW = settings.desks_per_row;
-                SETTINGS.HAS_PLANTS = settings.has_plants;
-                SETTINGS.HAS_WINDOWS = settings.has_windows;
-                SETTINGS.HAS_BOOKSHELF = settings.has_bookshelf;
-                SETTINGS.HAS_CLOCK = settings.has_clock;
-                SETTINGS.HAS_CARPET = settings.has_carpet;
+                    SETTINGS.NUM_ROWS = settings.number_of_rows;
+                    SETTINGS.DESKS_PER_ROW = settings.desks_per_row;
+                    SETTINGS.HAS_PLANTS = settings.has_plants;
+                    SETTINGS.HAS_WINDOWS = settings.has_windows;
+                    SETTINGS.HAS_BOOKSHELF = settings.has_bookshelf;
+                    SETTINGS.HAS_CLOCK = settings.has_clock;
+                    SETTINGS.HAS_CARPET = settings.has_carpet;
 
-                // Re-render the classroom with updated settings
-                renderClassroom();
-            }
-        })
-        .catch(error => console.error('Error saving customization:', error));
+                    // Re-render the classroom with updated settings
+                    renderClassroom();
+                }
+            })
+            .catch(error => console.error('Error saving customization:', error));
     }
 
     // Update form values to match settings
@@ -410,12 +410,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function connectWebSocket() {
         socket = new WebSocket(ws_path);
 
-        socket.onopen = function() {
+        socket.onopen = function () {
             console.log('WebSocket connected');
             reconnectAttempts = 0;
         };
 
-        socket.onclose = function(e) {
+        socket.onclose = function (e) {
             console.log('WebSocket disconnected');
             if (reconnectAttempts < maxReconnectAttempts) {
                 setTimeout(() => {
@@ -426,15 +426,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        socket.onerror = function(error) {
+        socket.onerror = function (error) {
             console.error('WebSocket error:', error);
         };
 
-        socket.onmessage = function(e) {
+        socket.onmessage = function (e) {
             const data = JSON.parse(e.data);
             console.log('Received message:', data); // Debug log
 
-            switch(data.type) {
+            switch (data.type) {
                 case 'participants_list':
                     console.log('Processing participants list:', data.participants); // Debug log
                     // Clear all seat labels first
@@ -714,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const notification = document.createElement('div');
         let bgColorClass;
 
-        switch(type) {
+        switch (type) {
             case 'warning':
                 bgColorClass = 'bg-yellow-600';
                 break;
@@ -1346,27 +1346,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCharacterLegsHTMLForOther(isMoving, walkFrame) {
         return `
             <div class="absolute bottom-0 left-4 w-12 h-2 bg-transparent flex justify-between">
-                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
-                }"></div>
-                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
-                }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
             </div>
             <div class="absolute bottom-0 left-3 w-14 h-2 bg-transparent flex justify-between">
-                <div class="w-5 h-3 bg-[#222] rounded-md transform ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
-                }"></div>
-                <div class="w-5 h-3 bg-[#222] rounded-md transform ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
-                }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
             </div>
         `;
     }
 
     // Helper functions for character rendering
     function getCharacterHairHTML() {
-        switch(state.character.direction) {
+        switch (state.character.direction) {
             case 'down':
                 return '<div class="absolute w-14 h-7 bg-[#8B4513] rounded-t-full top-0 left-1"></div>';
             case 'up':
@@ -1385,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCharacterFaceHTML() {
-        switch(state.character.direction) {
+        switch (state.character.direction) {
             case 'down':
                 return `
                     <div class="absolute top-6 left-4 w-2 h-2 bg-[#302825] rounded-full"></div>
@@ -1427,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getCharacterArmsHTML() {
         const walkFrame = state.character.walkFrame;
-        switch(state.character.direction) {
+        switch (state.character.direction) {
             case 'down':
             case 'up':
                 return `
@@ -1449,20 +1445,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return `
             <div class="absolute bottom-0 left-4 w-12 h-2 bg-transparent flex justify-between">
-                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
-                }"></div>
-                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
-                }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
             </div>
             <div class="absolute bottom-0 left-3 w-14 h-2 bg-transparent flex justify-between">
-                <div class="w-5 h-3 bg-[#222] rounded-md transform ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
-                }"></div>
-                <div class="w-5 h-3 bg-[#222] rounded-md transform ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
-                }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
             </div>
         `;
     }
