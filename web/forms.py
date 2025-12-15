@@ -2069,6 +2069,7 @@ class ChapterEventRSVPForm(forms.ModelForm):
             "status": TailwindSelect(),
         }
 
+
 class VirtualClassroomForm(forms.ModelForm):
     """Form for creating and editing virtual classrooms."""
 

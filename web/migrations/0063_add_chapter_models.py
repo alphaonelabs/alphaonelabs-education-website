@@ -148,9 +148,7 @@ class Migration(migrations.Migration):
                 ("virtual_link", models.URLField(blank=True, help_text="Link for virtual events")),
                 (
                     "max_attendees",
-                    models.PositiveIntegerField(
-                        blank=True, help_text="Leave blank for unlimited", null=True
-                    ),
+                    models.PositiveIntegerField(blank=True, help_text="Leave blank for unlimited", null=True),
                 ),
                 (
                     "status",
@@ -240,9 +238,7 @@ class Migration(migrations.Migration):
                 ("proposed_schedule", models.TextField(help_text="Proposed meeting schedule")),
                 (
                     "experience",
-                    models.TextField(
-                        help_text="Your relevant experience in education or community organizing"
-                    ),
+                    models.TextField(help_text="Your relevant experience in education or community organizing"),
                 ),
                 (
                     "status",
