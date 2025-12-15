@@ -1618,8 +1618,8 @@ def course_search(request):
     # Get total count before pagination
     total_results = courses.count()
 
-    # Log the search
-    if query or subject or level or min_price or max_price:
+    # Log the search (only if query is not blank or filters are applied)
+    if (query and query.strip()) or subject or level or min_price or max_price:
         filters = {
             "subject": subject,
             "level": level,
@@ -1628,7 +1628,7 @@ def course_search(request):
             "sort_by": sort_by,
         }
         SearchLog.objects.create(
-            query=query,
+            query=query.strip() if query else "",
             results_count=total_results,
             user=request.user if request.user.is_authenticated else None,
             filters_applied=filters,
@@ -4880,6 +4880,7 @@ def virtual_classroom_list(request):
 
 
 @login_required
+@require_POST
 def join_global_virtual_classroom(request):
     """Join (or create) the global virtual classroom and redirect to it."""
 
@@ -5042,6 +5043,9 @@ def virtual_classroom_detail(request, classroom_id):
             logger.exception("Error in virtual_classroom_detail customization")
             return JsonResponse({"status": "error", "message": "An internal error occurred"}, status=500)
 
+    # Get participants for the classroom
+    participants = VirtualClassroomParticipant.objects.filter(classroom=classroom).select_related("user")
+
     return render(
         request,
         "virtual_classroom/index.html",
@@ -5050,6 +5054,7 @@ def virtual_classroom_detail(request, classroom_id):
             "customization": customization,
             "is_teacher": is_teacher,
             "is_enrolled": is_enrolled,
+            "participants": participants,
         },
     )
 

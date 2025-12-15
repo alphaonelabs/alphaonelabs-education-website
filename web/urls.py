@@ -158,6 +158,9 @@ urlpatterns += i18n_patterns(
     path("avatar/preview/", views_avatar.preview_avatar, name="preview_avatar"),
     # Admin and Utilities
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
+    path(f"{settings.ADMIN_URL}/system/", admin_views.system_dashboard, name="system_dashboard"),
+    path(f"{settings.ADMIN_URL}/system/metrics/", admin_views.system_metrics_api, name="system_metrics_api"),
+    path(f"{settings.ADMIN_URL}/system/run/", admin_views.run_management_command, name="run_management_command"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
     path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
     path("subjects/", views.subjects, name="subjects"),

@@ -166,6 +166,19 @@ class VirtualClassroomConsumer(AsyncWebsocketConsumer):
                     )
                     # Send updated participants list
                     await self.send_participants_list()
+            elif message_type == "position_update":
+                # Broadcast position update to all other users
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "position_update",
+                        "username": self.user.username,
+                        "full_name": self.user.get_full_name() or self.user.username,
+                        "position": data.get("position"),
+                        "direction": data.get("direction"),
+                        "isMoving": data.get("isMoving"),
+                    },
+                )
             elif message_type == "seat_updated":
                 # Handle seat update
                 await self.channel_layer.group_send(
@@ -201,6 +214,10 @@ class VirtualClassroomConsumer(AsyncWebsocketConsumer):
 
     async def seat_occupied(self, event):
         """Handle when trying to take an occupied seat"""
+        await self.send(text_data=json.dumps(event))
+
+    async def position_update(self, event):
+        """Handle position update from other participants"""
         await self.send(text_data=json.dumps(event))
 
     async def participants_list(self, event):
