@@ -8787,9 +8787,9 @@ def infographic_share(request, pk):
 def lesson_summary_list(request):
     """View to list lesson summaries."""
     # Show user's own summaries and public summaries from others
-    summaries = LessonSummary.objects.filter(
-        models.Q(user=request.user) | models.Q(is_public=True)
-    ).select_related("user", "course", "session")
+    summaries = LessonSummary.objects.filter(models.Q(user=request.user) | models.Q(is_public=True)).select_related(
+        "user", "course", "session"
+    )
 
     # Filter by user's own summaries if requested
     if request.GET.get("my_summaries") == "true":

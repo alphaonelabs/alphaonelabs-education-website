@@ -3100,9 +3100,7 @@ class Infographic(models.Model):
     title = models.CharField(max_length=200, help_text="Title of the infographic")
     content = models.TextField(help_text="Main content or fact to display")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="tip")
-    subject = models.ForeignKey(
-        Subject, on_delete=models.PROTECT, related_name="infographics", null=True, blank=True
-    )
+    subject = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="infographics", null=True, blank=True)
     image = models.ImageField(upload_to="infographics/", blank=True, help_text="Optional background image")
     background_color = models.CharField(
         max_length=7, default="#5EEAD4", help_text="Hex color for background (e.g., #5EEAD4 for teal-300)"
@@ -3157,6 +3155,8 @@ class LessonSummary(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.user.username} on {self.date}"
+
+
 class VirtualClassroom(models.Model):
     """Model for storing virtual classroom instances."""
 

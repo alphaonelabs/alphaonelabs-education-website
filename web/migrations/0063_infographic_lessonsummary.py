@@ -27,9 +27,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "title",
-                    models.CharField(
-                        help_text="Title of the infographic", max_length=200
-                    ),
+                    models.CharField(help_text="Title of the infographic", max_length=200),
                 ),
                 ("content", models.TextField(help_text="Main content or fact to display")),
                 (
@@ -113,9 +111,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "title",
-                    models.CharField(
-                        help_text="Title of the lesson summary", max_length=200
-                    ),
+                    models.CharField(help_text="Title of the lesson summary", max_length=200),
                 ),
                 (
                     "key_learnings",
@@ -123,9 +119,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "additional_notes",
-                    models.TextField(
-                        blank=True, help_text="Additional notes or thoughts"
-                    ),
+                    models.TextField(blank=True, help_text="Additional notes or thoughts"),
                 ),
                 ("date", models.DateField(default=django.utils.timezone.now)),
                 (

@@ -1989,9 +1989,7 @@ class InfographicForm(forms.ModelForm):
         fields = ["title", "content", "category", "subject", "image", "background_color", "text_color"]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Enter infographic title"}),
-            "content": TailwindTextarea(
-                attrs={"rows": 5, "placeholder": "Enter your educational tip or fact here..."}
-            ),
+            "content": TailwindTextarea(attrs={"rows": 5, "placeholder": "Enter your educational tip or fact here..."}),
             "category": TailwindSelect(),
             "subject": TailwindSelect(),
             "image": TailwindFileInput(),
@@ -2050,6 +2048,8 @@ class LessonSummaryForm(forms.ModelForm):
             self.fields["session"].queryset = Session.objects.filter(
                 models.Q(course__enrollments__user=user) | models.Q(course__teacher=user)
             ).distinct()
+
+
 class VirtualClassroomForm(forms.ModelForm):
     """Form for creating and editing virtual classrooms."""
 
