@@ -11,12 +11,17 @@
           Enroll Student in – {{ course.title }}
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
-          Enter the student's details below to create a new account and enroll them.
+          Enter the student's details below to enroll them in the course. You can add both new and existing students.
         </p>
       </div>
       <!-- Enrollment Form -->
       <form method="post" class="space-y-6">
         {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4">
+            <p class="text-red-700 dark:text-red-300">{{ form.non_field_errors.0 }}</p>
+          </div>
+        {% endif %}
         <div class="space-y-4">
           <!-- First Name Field -->
           <div>
@@ -58,7 +63,6 @@
             {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>{% endif %}
           </div>
         </div>
-        {% if form.non_field_errors %}<div class="text-red-500 text-sm">{{ form.non_field_errors }}</div>{% endif %}
         <div class="mt-6 flex justify-between">
           <a href="{% url 'course_detail' course.slug %}"
              class="w-1/2 inline-flex justify-center py-2 px-4 border border-transparent rounded-md text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300">

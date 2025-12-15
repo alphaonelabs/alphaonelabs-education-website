@@ -7,6 +7,7 @@
     vps_user: django
     project_name: education-website
     project_root: /home/{{ vps_user }}/{{ project_name }}
+    media_dir: /home/{{ vps_user }}/media
     # NOTE: Updated to point to the canonical repo that now contains new management commands (e.g., dbdiag).
     # Previously this pointed to https://github.com/AlphaOneLabs/education-website.git which lacked recent commits.
     git_repo: "https://github.com/AlphaOneLabs/alphaonelabs-education-website.git"
@@ -306,11 +307,20 @@
 
     - name: Ensure media directory exists and readable
       file:
-        path: "{{ project_root }}/media"
+        path: "{{ media_dir }}"
         state: directory
         mode: '0755'
         owner: "{{ vps_user }}"
         group: "{{ vps_user }}"
+
+    - name: Symlink media directory
+      file:
+        src: "{{ media_dir }}"
+        dest: "{{ project_root }}/media"
+        state: link
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+        force: true
 
     - name: Configure nginx
       template:
