@@ -535,6 +535,11 @@ urlpatterns += i18n_patterns(
         name="virtual_classroom_create",
     ),
     path(
+        "virtual-classroom/global/join/",
+        login_required(views.join_global_virtual_classroom),
+        name="join_global_virtual_classroom",
+    ),
+    path(
         "virtual-classroom/<int:classroom_id>/",
         login_required(views.virtual_classroom_detail),
         name="virtual_classroom_detail",

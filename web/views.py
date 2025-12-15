@@ -324,6 +324,16 @@ def index(request):
     # Get last two waiting room requests
     latest_waiting_room_requests = WaitingRoom.objects.filter(status="open").order_by("-created_at")[:2]
 
+    # Global virtual classroom summary for homepage CTA
+    global_classroom = (
+        VirtualClassroom.objects.filter(name__iexact="Global Virtual Classroom", course__isnull=True)
+        .order_by("-created_at")
+        .first()
+    )
+    global_classroom_participants = 0
+    if global_classroom:
+        global_classroom_participants = VirtualClassroomParticipant.objects.filter(classroom=global_classroom).count()
+
     # Get top latest 3 leaderboard users
     try:
         top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
@@ -349,6 +359,8 @@ def index(request):
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
         "latest_waiting_room_requests": latest_waiting_room_requests,
+        "global_classroom": global_classroom,
+        "global_classroom_participants": global_classroom_participants,
         "top_referrers": top_referrers,
         "top_leaderboard_users": top_leaderboard_users,
         "form": form,
@@ -1520,8 +1532,8 @@ def course_search(request):
     # Get total count before pagination
     total_results = courses.count()
 
-    # Log the search
-    if query or subject or level or min_price or max_price:
+    # Log the search (only if query is not blank or filters are applied)
+    if (query and query.strip()) or subject or level or min_price or max_price:
         filters = {
             "subject": subject,
             "level": level,
@@ -1530,7 +1542,7 @@ def course_search(request):
             "sort_by": sort_by,
         }
         SearchLog.objects.create(
-            query=query,
+            query=query.strip() if query else "",
             results_count=total_results,
             user=request.user if request.user.is_authenticated else None,
             filters_applied=filters,
@@ -4779,6 +4791,41 @@ def virtual_classroom_list(request):
         "virtual_classroom/list.html",
         {"classrooms": classrooms, "user": request.user},  # Pass the user object which includes the profile
     )
+
+
+@login_required
+@require_POST
+def join_global_virtual_classroom(request):
+    """Join (or create) the global virtual classroom and redirect to it."""
+
+    teacher = User.objects.filter(is_staff=True, is_active=True).order_by("-is_superuser", "date_joined").first()
+
+    if not teacher:
+        messages.error(request, "No teacher is available to host the global virtual classroom yet.")
+        return redirect("index")
+
+    classroom = (
+        VirtualClassroom.objects.filter(name__iexact="Global Virtual Classroom", course__isnull=True)
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not classroom:
+        classroom = VirtualClassroom.objects.create(
+            name="Global Virtual Classroom",
+            teacher=teacher,
+            is_active=True,
+            max_students=200,
+        )
+
+    # Ensure customization exists
+    VirtualClassroomCustomization.objects.get_or_create(classroom=classroom)
+
+    # Add the current user as a participant
+    VirtualClassroomParticipant.objects.get_or_create(user=request.user, classroom=classroom)
+
+    messages.success(request, "You're in! Welcome to the global virtual classroom.")
+    return redirect("virtual_classroom_detail", classroom_id=classroom.id)
 
 
 @login_required
