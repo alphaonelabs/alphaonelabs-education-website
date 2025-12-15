@@ -43,19 +43,20 @@ def get_system_metrics():
             for proc in psutil.process_iter(["pid", "name", "memory_percent"]):
                 try:
                     if proc.memory_percent() > 0.1:  # Only include processes using > 0.1% RAM
+                        mem_info = proc.memory_info()
                         top_processes.append(
                             {
                                 "pid": proc.pid,
                                 "name": proc.name(),
                                 "memory_percent": round(proc.memory_percent(), 2),
+                                "memory_bytes": mem_info.rss,
                             }
                         )
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     pass
 
-            # Sort by memory usage and get top 10
+            # Sort by memory usage and list all above threshold
             top_processes.sort(key=lambda x: x["memory_percent"], reverse=True)
-            top_processes = top_processes[:10]
         except Exception as e:
             logger.warning(f"Error getting process list: {e}")
             top_processes = []

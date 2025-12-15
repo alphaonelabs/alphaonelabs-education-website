@@ -259,10 +259,14 @@
                                   background: {% if proc.memory_percent > 50 %}#f44336{% elif proc.memory_percent > 30 %}#ff9800{% else %}#4caf50{% endif %};
                                   width: {{ proc.memory_percent }}%"></div>
                     </div>
-                    <span style="font-weight: 600;
-                                 color: #333;
-                                 min-width: 50px;
-                                 text-align: right">{{ proc.memory_percent }}%</span>
+                    <div style="display: flex;
+                                flex-direction: column;
+                                align-items: flex-end;
+                                gap: 4px;
+                                min-width: 90px">
+                      <span style="font-weight: 600; color: #333; text-align: right">{{ proc.memory_percent }}%</span>
+                      <span style="font-size: 12px; color: #555; text-align: right">{{ proc.memory_bytes|filesizeformat }}</span>
+                    </div>
                   </div>
                 </td>
               </tr>
