@@ -4794,6 +4794,7 @@ def virtual_classroom_list(request):
 
 
 @login_required
+@require_POST
 def join_global_virtual_classroom(request):
     """Join (or create) the global virtual classroom and redirect to it."""
 
