@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
         occupiedSeats: new Set() // Track which seats are occupied
     };
 
+    // Track other participants' positions and states
+    const otherParticipants = new Map(); // Map of username -> participant data
+
     // Helper function to check if character is near an interactive element
     function isNearInteractive(charX, charY, element, threshold = 50) {
         const centerX = element.x + element.width / 2;
@@ -102,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Only allow other interactions if not seated
                     if (!state.isSeated) {
                         let redirectUrl = '';
-                        switch(element) {
+                        switch (element) {
                             case 'blackboard':
                                 redirectUrl = `/whiteboard/${classroomId}/`;
                                 break;
@@ -121,9 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function to darken colors
     function darkenColor(hex, percent) {
-        let r = parseInt(hex.substring(1,3), 16);
-        let g = parseInt(hex.substring(3,5), 16);
-        let b = parseInt(hex.substring(5,7), 16);
+        let r = parseInt(hex.substring(1, 3), 16);
+        let g = parseInt(hex.substring(3, 5), 16);
+        let b = parseInt(hex.substring(5, 7), 16);
 
         r = Math.floor(r * (100 - percent) / 100);
         g = Math.floor(g * (100 - percent) / 100);
@@ -214,32 +217,32 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                console.log('Customization saved successfully');
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Customization saved successfully');
 
-                // Update state and constants
-                state.settings = settings;
-                COLORS.WALL = settings.wall_color;
-                COLORS.FLOOR = settings.floor_color;
-                COLORS.DESK = settings.desk_color;
-                COLORS.CHAIR = settings.chair_color;
-                COLORS.BOARD = settings.board_color;
+                    // Update state and constants
+                    state.settings = settings;
+                    COLORS.WALL = settings.wall_color;
+                    COLORS.FLOOR = settings.floor_color;
+                    COLORS.DESK = settings.desk_color;
+                    COLORS.CHAIR = settings.chair_color;
+                    COLORS.BOARD = settings.board_color;
 
-                SETTINGS.NUM_ROWS = settings.number_of_rows;
-                SETTINGS.DESKS_PER_ROW = settings.desks_per_row;
-                SETTINGS.HAS_PLANTS = settings.has_plants;
-                SETTINGS.HAS_WINDOWS = settings.has_windows;
-                SETTINGS.HAS_BOOKSHELF = settings.has_bookshelf;
-                SETTINGS.HAS_CLOCK = settings.has_clock;
-                SETTINGS.HAS_CARPET = settings.has_carpet;
+                    SETTINGS.NUM_ROWS = settings.number_of_rows;
+                    SETTINGS.DESKS_PER_ROW = settings.desks_per_row;
+                    SETTINGS.HAS_PLANTS = settings.has_plants;
+                    SETTINGS.HAS_WINDOWS = settings.has_windows;
+                    SETTINGS.HAS_BOOKSHELF = settings.has_bookshelf;
+                    SETTINGS.HAS_CLOCK = settings.has_clock;
+                    SETTINGS.HAS_CARPET = settings.has_carpet;
 
-                // Re-render the classroom with updated settings
-                renderClassroom();
-            }
-        })
-        .catch(error => console.error('Error saving customization:', error));
+                    // Re-render the classroom with updated settings
+                    renderClassroom();
+                }
+            })
+            .catch(error => console.error('Error saving customization:', error));
     }
 
     // Update form values to match settings
@@ -407,12 +410,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function connectWebSocket() {
         socket = new WebSocket(ws_path);
 
-        socket.onopen = function() {
+        socket.onopen = function () {
             console.log('WebSocket connected');
             reconnectAttempts = 0;
         };
 
-        socket.onclose = function(e) {
+        socket.onclose = function (e) {
             console.log('WebSocket disconnected');
             if (reconnectAttempts < maxReconnectAttempts) {
                 setTimeout(() => {
@@ -423,15 +426,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        socket.onerror = function(error) {
+        socket.onerror = function (error) {
             console.error('WebSocket error:', error);
         };
 
-        socket.onmessage = function(e) {
+        socket.onmessage = function (e) {
             const data = JSON.parse(e.data);
             console.log('Received message:', data); // Debug log
 
-            switch(data.type) {
+            switch (data.type) {
                 case 'participants_list':
                     console.log('Processing participants list:', data.participants); // Debug log
                     // Clear all seat labels first
@@ -449,9 +452,41 @@ document.addEventListener('DOMContentLoaded', () => {
                             updateSeatLabel(participant.seat_id, participant.full_name);
                             markSeatOccupied(participant.seat_id);
                         }
+                        // Initialize or update participant data
+                        if (!otherParticipants.has(participant.username)) {
+                            otherParticipants.set(participant.username, {
+                                full_name: participant.full_name,
+                                position: { x: 400, y: 300 }, // Default starting position
+                                direction: 'down',
+                                isMoving: false,
+                                walkFrame: 0,
+                                seat_id: participant.seat_id
+                            });
+                        }
                     });
 
                     updateStudentsList(data.participants)
+                    break;
+
+                case 'position_update':
+                    // Update position of other participant
+                    if (data.username && data.username !== getCurrentUsername()) {
+                        if (!otherParticipants.has(data.username)) {
+                            otherParticipants.set(data.username, {
+                                full_name: data.full_name || data.username,
+                                position: data.position || { x: 400, y: 300 },
+                                direction: data.direction || 'down',
+                                isMoving: data.isMoving || false,
+                                walkFrame: 0,
+                                seat_id: data.seat_id
+                            });
+                        } else {
+                            const participant = otherParticipants.get(data.username);
+                            participant.position = data.position;
+                            participant.direction = data.direction;
+                            participant.isMoving = data.isMoving;
+                        }
+                    }
                     break;
 
                 case 'seat_updated':
@@ -472,6 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.user.username === getCurrentUsername()) {
                             state.isSeated = true;
                             state.currentSeat = data.seat_id;
+                        } else {
+                            // Update other participant's seat
+                            if (otherParticipants.has(data.user.username)) {
+                                otherParticipants.get(data.user.username).seat_id = data.seat_id;
+                            }
                         }
                     }
                     break;
@@ -491,6 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.user.username === getCurrentUsername()) {
                             state.isSeated = false;
                             state.currentSeat = null;
+                        } else {
+                            // Update other participant's seat
+                            if (otherParticipants.has(data.user.username)) {
+                                otherParticipants.get(data.user.username).seat_id = null;
+                            }
                         }
                     }
                     break;
@@ -510,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     removeStudent(data.user);
+                    otherParticipants.delete(data.user.username);
 
                     // Show notification
                     showNotification(`${data.user.full_name} has left the classroom`, 'info');
@@ -520,6 +566,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.seat_id) {
                         updateSeatLabel(data.seat_id, data.user.full_name);
                         markSeatOccupied(data.seat_id);
+                    }
+                    // Initialize participant data
+                    if (!otherParticipants.has(data.user.username)) {
+                        otherParticipants.set(data.user.username, {
+                            full_name: data.user.full_name,
+                            position: { x: 400, y: 300 },
+                            direction: 'down',
+                            isMoving: false,
+                            walkFrame: 0,
+                            seat_id: data.seat_id
+                        });
                     }
 
                     // Show notification
@@ -657,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const notification = document.createElement('div');
         let bgColorClass;
 
-        switch(type) {
+        switch (type) {
             case 'warning':
                 bgColorClass = 'bg-yellow-600';
                 break;
@@ -1181,6 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const character = document.createElement('div');
         character.className = `absolute transition-transform duration-200 pointer-events-none character-facing-${state.character.direction}`;
+        character.setAttribute('data-player-type', 'current');
         character.style.cssText = `
             left: ${state.character.position.x}px;
             top: ${state.character.position.y}px;
@@ -1205,9 +1263,106 @@ document.addEventListener('DOMContentLoaded', () => {
         classroomContainer.appendChild(character);
     }
 
+    function renderOtherParticipants() {
+        // Remove existing other participant characters
+        document.querySelectorAll('[data-player-type="other"]').forEach(el => el.remove());
+
+        // Render each other participant
+        otherParticipants.forEach((participantData, username) => {
+            if (participantData.seat_id) {
+                // Don't render if seated - their name will show on the seat
+                return;
+            }
+
+            const character = document.createElement('div');
+            character.className = `absolute transition-transform duration-200 pointer-events-none character-facing-${participantData.direction}`;
+            character.setAttribute('data-player-type', 'other');
+            character.setAttribute('data-username', username);
+            character.style.cssText = `
+                left: ${participantData.position.x}px;
+                top: ${participantData.position.y}px;
+                transform: translate(-50%, -50%);
+                z-index: ${Math.floor(participantData.position.y)};
+            `;
+
+            // Use a different color for other participants (teal instead of blue)
+            const bodyColor = '#14B8A6'; // teal-500
+            character.innerHTML = `
+                <div class="relative">
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 relative">
+                            <div class="absolute w-14 h-14 bg-[#FFD9B3] rounded-full top-1 left-1 shadow-md border border-[#E0B088]"></div>
+                            ${getCharacterHairHTMLForOther()}
+                            ${getCharacterFaceHTMLForOther()}
+                        </div>
+                        <div class="relative w-20 h-24 -mt-4">
+                            <div class="w-16 h-16 bg-teal-500 rounded-md mx-auto" style="background-color: ${bodyColor}">
+                            </div>
+                            ${getCharacterArmsHTMLForOther(participantData.walkFrame)}
+                            ${getCharacterLegsHTMLForOther(participantData.isMoving, participantData.walkFrame)}
+                            <div class="absolute bottom-0 w-16 h-12 bg-black opacity-30 -z-10 rounded-md transform translate-y-[-3px] translate-x-[9px]"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add name label above the character
+            const nameLabel = document.createElement('div');
+            nameLabel.className = 'absolute text-white text-xs font-bold bg-gray-800 bg-opacity-90 px-2 py-1 rounded whitespace-nowrap';
+            nameLabel.style.cssText = `
+                left: ${participantData.position.x}px;
+                top: ${participantData.position.y - 60}px;
+                transform: translateX(-50%);
+                z-index: ${Math.floor(participantData.position.y) + 1};
+                pointer-events: none;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            `;
+            nameLabel.textContent = participantData.full_name;
+
+            classroomContainer.appendChild(nameLabel);
+            classroomContainer.appendChild(character);
+        });
+    }
+
+    function getCharacterHairHTMLForOther() {
+        return '<div class="absolute w-14 h-7 bg-[#8B4513] rounded-t-full top-0 left-1"></div>';
+    }
+
+    function getCharacterFaceHTMLForOther() {
+        return `
+            <div class="absolute top-6 left-4 w-2 h-2 bg-[#302825] rounded-full"></div>
+            <div class="absolute top-6 right-4 w-2 h-2 bg-[#302825] rounded-full"></div>
+            <div class="absolute top-10 left-6 w-4 h-1 bg-[#CC6666] rounded-full"></div>
+        `;
+    }
+
+    function getCharacterArmsHTMLForOther(walkFrame) {
+        return `
+            <div class="absolute left-0 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? 'rotate-6' : '-rotate-6'}"></div>
+            <div class="absolute right-0 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? '-rotate-6' : 'rotate-6'}"></div>
+        `;
+    }
+
+    function getCharacterLegsHTMLForOther(isMoving, walkFrame) {
+        return `
+            <div class="absolute bottom-0 left-4 w-12 h-2 bg-transparent flex justify-between">
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
+            </div>
+            <div class="absolute bottom-0 left-3 w-14 h-2 bg-transparent flex justify-between">
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
+            </div>
+        `;
+    }
+
     // Helper functions for character rendering
     function getCharacterHairHTML() {
-        switch(state.character.direction) {
+        switch (state.character.direction) {
             case 'down':
                 return '<div class="absolute w-14 h-7 bg-[#8B4513] rounded-t-full top-0 left-1"></div>';
             case 'up':
@@ -1226,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCharacterFaceHTML() {
-        switch(state.character.direction) {
+        switch (state.character.direction) {
             case 'down':
                 return `
                     <div class="absolute top-6 left-4 w-2 h-2 bg-[#302825] rounded-full"></div>
@@ -1268,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getCharacterArmsHTML() {
         const walkFrame = state.character.walkFrame;
-        switch(state.character.direction) {
+        switch (state.character.direction) {
             case 'down':
             case 'up':
                 return `
@@ -1290,23 +1445,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return `
             <div class="absolute bottom-0 left-4 w-12 h-2 bg-transparent flex justify-between">
-                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
-                }"></div>
-                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
-                }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
             </div>
             <div class="absolute bottom-0 left-3 w-14 h-2 bg-transparent flex justify-between">
-                <div class="w-5 h-3 bg-[#222] rounded-md transform ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
-                }"></div>
-                <div class="w-5 h-3 bg-[#222] rounded-md transform ${
-                    isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
-                }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-0' : 'translate-y-1') : ''
+            }"></div>
+                <div class="w-5 h-3 bg-[#222] rounded-md transform ${isMoving ? (walkFrame % 2 === 0 ? 'translate-y-1' : 'translate-y-0') : ''
+            }"></div>
             </div>
         `;
     }
+
+    // Track last position update time to avoid spamming WebSocket
+    let lastPositionUpdateTime = Date.now();
+    const positionUpdateInterval = 100; // Send updates every 100ms
 
     // Character animation loop
     function updateCharacter() {
@@ -1375,6 +1530,19 @@ document.addEventListener('DOMContentLoaded', () => {
         state.character.position = { x: newX, y: newY };
         state.character.velocity = { x: newVx, y: newVy };
 
+        // Send position update to other users periodically
+        if (now - lastPositionUpdateTime > positionUpdateInterval && !state.isSeated) {
+            lastPositionUpdateTime = now;
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'position_update',
+                    position: { x: newX, y: newY },
+                    direction: state.character.direction,
+                    isMoving: state.character.isMoving
+                }));
+            }
+        }
+
         // Check for interactions
         let nearInteractive = false;
         let currentInteractive = null;
@@ -1438,7 +1606,17 @@ document.addEventListener('DOMContentLoaded', () => {
             hideInteractionPopup();
         }
 
+        // Update walk frames for other participants
+        otherParticipants.forEach(participant => {
+            if (participant.isMoving && now % 150 < 30) {
+                participant.walkFrame = (participant.walkFrame + 1) % 4;
+            } else if (!participant.isMoving) {
+                participant.walkFrame = 0;
+            }
+        });
+
         renderCharacter();
+        renderOtherParticipants();
         requestAnimationFrame(updateCharacter);
     }
 

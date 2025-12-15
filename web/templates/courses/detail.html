@@ -239,11 +239,13 @@
                       Message Teacher
                     </a>
                   {% endif %}
-                  <a href="{% url 'public_profile' course.teacher.username %}"
-                     class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg {% if user != course.teacher %}ml-2{% endif %} transition duration-200">
-                    <i class="fas fa-user mr-2"></i>
-                    View Profile
-                  </a>
+                  {% if course.teacher.profile.is_profile_public %}
+                    <a href="{% url 'public_profile' course.teacher.username %}"
+                       class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg {% if user != course.teacher %}ml-2{% endif %} transition duration-200">
+                      <i class="fas fa-user mr-2"></i>
+                      View Profile
+                    </a>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -915,11 +917,13 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                       <div class="flex space-x-2">
-                                        <a href="{% url 'public_profile' enrollment.student.username %}"
-                                           class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                           title="View profile">
-                                          <i class="fas fa-user-circle"></i>
-                                        </a>
+                                        {% if enrollment.student.profile.is_profile_public %}
+                                          <a href="{% url 'public_profile' enrollment.student.username %}"
+                                             class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                             title="View profile">
+                                            <i class="fas fa-user-circle"></i>
+                                          </a>
+                                        {% endif %}
                                         {% if user == course.teacher %}
                                           <a href="{% url 'student_management' course.slug enrollment.student.id %}"
                                              class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
