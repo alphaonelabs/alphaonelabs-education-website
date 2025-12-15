@@ -192,22 +192,22 @@
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.add('hidden');
         });
-        
+
         // Remove active class from all tab buttons
         document.querySelectorAll('.tab-button').forEach(button => {
             button.classList.remove('active', 'border-teal-300', 'text-teal-300');
             button.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
         });
-        
+
         // Show selected tab content
         document.getElementById('content-' + tabName).classList.remove('hidden');
-        
+
         // Add active class to selected tab button
         const activeButton = document.getElementById('tab-' + tabName);
         activeButton.classList.add('active', 'border-teal-300', 'text-teal-300');
         activeButton.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
     }
-    
+
     // Initialize first tab as active
     document.addEventListener('DOMContentLoaded', function() {
         showTab('hypotheses');

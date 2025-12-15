@@ -424,7 +424,7 @@ Based on the experimental results, we observe:
 - Novel insights that extend current understanding in {project.domain}
 
 ## Implications
-This discovery has potential implications for future research in {project.domain} 
+This discovery has potential implications for future research in {project.domain}
 and may open new avenues for investigation.
 
 ## Conclusion

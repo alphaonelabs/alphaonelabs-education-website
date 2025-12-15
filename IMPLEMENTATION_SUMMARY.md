@@ -5,7 +5,7 @@ This feature implements a comprehensive AI-Driven Scientific Discovery Engine th
 
 ## Code Statistics
 - **Python Code**: 782 lines across 5 files
-- **HTML Templates**: 1,293 lines across 8 files  
+- **HTML Templates**: 1,293 lines across 8 files
 - **Total Files Created**: 21 files
 - **Commits**: 4 commits
 
@@ -51,7 +51,7 @@ README.md (updated with new feature)
 - Auto-generates unique slugs
 - User ownership with permissions
 
-### 2. Hypothesis  
+### 2. Hypothesis
 - AI-generated or user-proposed hypotheses
 - Fields: statement, rationale, status, confidence_score, is_ai_generated
 - Status states: proposed, testing, supported, rejected, refined
@@ -113,7 +113,7 @@ All views include:
 ### Design System
 - **Framework**: Tailwind CSS (no custom CSS)
 - **Dark Mode**: Full support with `dark:` prefixes
-- **Colors**: 
+- **Colors**:
   - Primary: teal-300
   - Status indicators: green, yellow, red, blue
   - Significance: red (breakthrough), orange (significant), blue (moderate), gray (minor)

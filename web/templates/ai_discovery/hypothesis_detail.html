@@ -231,18 +231,18 @@
     function showExperimentModal() {
         document.getElementById('experimentModal').classList.remove('hidden');
     }
-    
+
     function hideExperimentModal() {
         document.getElementById('experimentModal').classList.add('hidden');
     }
-    
+
     // Close modal on escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             hideExperimentModal();
         }
     });
-    
+
     // Close modal on background click
     document.getElementById('experimentModal').addEventListener('click', function(event) {
         if (event.target === this) {
