@@ -807,7 +807,7 @@ class CampaignAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at", "progress_percentage", "donors_count")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [CampaignImageInline, CampaignUpdateInline, CampaignDonationInline]
-    
+
     fieldsets = (
         (
             "Basic Information",
@@ -872,7 +872,7 @@ class CampaignDonationAdmin(admin.ModelAdmin):
     list_filter = ("status", "anonymous", "created_at")
     search_fields = ("campaign__title", "email", "user__username")
     readonly_fields = ("created_at", "updated_at")
-    
+
     fieldsets = (
         (
             "Donation Information",

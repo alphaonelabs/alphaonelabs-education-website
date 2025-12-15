@@ -1903,7 +1903,7 @@ class Campaign(models.Model):
     deadline = models.DateField(null=True, blank=True, help_text="Campaign deadline")
     school_name = models.CharField(max_length=200, blank=True, help_text="School or institution name")
     school_verified = models.BooleanField(default=False, help_text="Whether school identity is verified")
-    
+
     # Matching grants
     matching_enabled = models.BooleanField(default=False, help_text="Enable matching grants")
     matching_multiplier = models.DecimalField(
@@ -1915,7 +1915,7 @@ class Campaign(models.Model):
     matching_sponsor = models.CharField(
         max_length=200, blank=True, help_text="Name of matching sponsor"
     )
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1969,14 +1969,14 @@ class CampaignImage(models.Model):
             img = Image.open(self.image)
             max_size = (800, 600)
             img.thumbnail(max_size, Image.Resampling.LANCZOS)
-            
+
             output = BytesIO()
             img_format = img.format or "JPEG"
             img.save(output, format=img_format, quality=85)
             output.seek(0)
-            
+
             self.image = ContentFile(output.read(), name=self.image.name)
-        
+
         super().save(*args, **kwargs)
 
 
