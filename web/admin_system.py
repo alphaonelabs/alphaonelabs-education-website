@@ -37,6 +37,29 @@ def get_system_metrics():
         process = psutil.Process()
         proc_memory = process.memory_info()
 
+        # Get top processes by memory usage
+        top_processes = []
+        try:
+            for proc in psutil.process_iter(["pid", "name", "memory_percent"]):
+                try:
+                    if proc.memory_percent() > 0.1:  # Only include processes using > 0.1% RAM
+                        top_processes.append(
+                            {
+                                "pid": proc.pid,
+                                "name": proc.name(),
+                                "memory_percent": round(proc.memory_percent(), 2),
+                            }
+                        )
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+
+            # Sort by memory usage and get top 10
+            top_processes.sort(key=lambda x: x["memory_percent"], reverse=True)
+            top_processes = top_processes[:10]
+        except Exception as e:
+            logger.warning(f"Error getting process list: {e}")
+            top_processes = []
+
         return {
             "cpu": {
                 "percent": cpu_percent,
@@ -66,6 +89,7 @@ def get_system_metrics():
                 "rss": proc_memory.rss,
                 "vms": proc_memory.vms,
             },
+            "top_processes": top_processes,
             "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
@@ -85,7 +109,7 @@ def get_available_commands():
                     __import__(f"{app_name}.management.commands", fromlist=["commands"]).__path__[0]
                 )
                 for command_name in app_commands:
-                    commands.append({"app": app_name, "name": command_name, "full_name": f"{app_name}.{command_name}"})
+                    commands.append({"app": app_name, "name": command_name, "full_name": command_name})
             except (ImportError, AttributeError):
                 pass
 
