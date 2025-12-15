@@ -44,7 +44,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "entry_fee_points",
-                    models.PositiveIntegerField(default=0, help_text="Points required to enter the competition (0 for free)"),
+                    models.PositiveIntegerField(
+                        default=0, help_text="Points required to enter the competition (0 for free)"
+                    ),
                 ),
                 (
                     "image",
@@ -94,7 +96,12 @@ class Migration(migrations.Migration):
                 ),
                 ("name", models.CharField(help_text="Reward name (e.g., '$500 Scholarship')", max_length=200)),
                 ("description", models.TextField(help_text="Detailed description of the reward")),
-                ("position", models.PositiveIntegerField(help_text="Required position/rank to win this reward (1 for 1st place)")),
+                (
+                    "position",
+                    models.PositiveIntegerField(
+                        help_text="Required position/rank to win this reward (1 for 1st place)"
+                    ),
+                ),
                 ("quantity", models.PositiveIntegerField(default=1, help_text="Number of this reward available")),
                 (
                     "value",
@@ -147,7 +154,10 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("score", models.PositiveIntegerField(default=0, help_text="Cumulative score in this competition")),
-                ("rank", models.PositiveIntegerField(blank=True, help_text="Current rank in the competition", null=True)),
+                (
+                    "rank",
+                    models.PositiveIntegerField(blank=True, help_text="Current rank in the competition", null=True),
+                ),
                 ("joined_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "last_submission_at",

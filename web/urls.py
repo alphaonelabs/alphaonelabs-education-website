@@ -319,7 +319,9 @@ urlpatterns += i18n_patterns(
     path("competitions/", views.competition_list, name="competition_list"),
     path("competitions/<int:competition_id>/", views.competition_detail, name="competition_detail"),
     path("competitions/<int:competition_id>/join/", views.competition_join, name="competition_join"),
-    path("competitions/<int:competition_id>/leaderboard/", views.competition_leaderboard, name="competition_leaderboard"),
+    path(
+        "competitions/<int:competition_id>/leaderboard/", views.competition_leaderboard, name="competition_leaderboard"
+    ),
     # Educational Videos URLs
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
     path("videos/upload/", views.upload_educational_video, name="upload_educational_video"),
