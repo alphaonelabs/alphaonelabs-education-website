@@ -6818,7 +6818,9 @@ def award_badge(request):
             return JsonResponse({"success": False, "message": "Student already has this badge"}, status=400)
 
         # Create notification for the student
-        notification_message = f"You were awarded the {badge.name} badge by {request.user.get_full_name() or request.user.username}"
+        notification_message = (
+            f"You were awarded the {badge.name} badge by {request.user.get_full_name() or request.user.username}"
+        )
         if award_message:
             notification_message += f": {award_message}"
 
