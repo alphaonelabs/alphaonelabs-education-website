@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -20,6 +21,9 @@ from python_avatars import (
 )
 
 from .forms import AvatarForm
+
+# Add logger configuration
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -44,7 +48,9 @@ def set_avatar_as_profile_pic(request):
 
                 messages.success(request, "Avatar set as profile picture successfully!")
             except Exception as e:
-                messages.error(request, f"Error setting profile picture: {str(e)}")
+                # Log the detailed exception for debugging
+                logger.exception("Error setting profile picture: %s", str(e))
+                messages.error(request, "Error setting profile picture: An internal error occurred")
         else:
             messages.error(request, "No avatar available to set as profile picture.")
     return redirect("profile")
@@ -155,5 +161,7 @@ def preview_avatar(request):
             )
             return JsonResponse({"success": True, "avatar_svg": avatar.render()})
         except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            # Log the detailed exception for debugging
+            logger.exception("Error in preview_avatar: %s", str(e))
+            return JsonResponse({"success": False, "error": "An internal error occurred"}, status=400)
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
