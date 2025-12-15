@@ -25,6 +25,33 @@
     {% endif %}
     <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
       <div class="md:w-3/4 space-y-7">
+        <div class="bg-white dark:bg-gray-800 border border-teal-300 dark:border-teal-400 rounded-lg shadow-lg p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p class="text-sm uppercase tracking-wide text-teal-600 dark:text-teal-300 font-semibold">Live now</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">Global Virtual Classroom</h2>
+            <p class="text-gray-600 dark:text-gray-300 mt-1">Drop in, collaborate, and connect with learners worldwide.</p>
+            {% if global_classroom_participants %}
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {{ global_classroom_participants }} learners already inside.
+              </p>
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-2">
+            {% if user.is_authenticated %}
+              <a href="{% url 'join_global_virtual_classroom' %}"
+                 class="bg-teal-300 hover:bg-teal-400 text-white px-5 py-3 rounded-lg font-semibold shadow-md transition duration-200 flex items-center gap-2">
+                <i class="fas fa-door-open"></i>
+                Join Now
+              </a>
+            {% else %}
+              <a href="{% url 'account_login' %}"
+                 class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-3 rounded-lg font-semibold shadow-md transition duration-200 flex items-center gap-2">
+                <i class="fas fa-sign-in-alt"></i>
+                Sign in to Join
+              </a>
+            {% endif %}
+          </div>
+        </div>
         <div class="space-y-4">
           <blockquote class="text-xl italic">
             "Somewhere, something incredible is waiting to be known."
