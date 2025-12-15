@@ -28,6 +28,7 @@ from .models import (
     ForumTopic,
     Goods,
     LearningStreak,
+    Meetup,
     MembershipPlan,
     MembershipSubscriptionEvent,
     Notification,
@@ -727,6 +728,26 @@ class OrderItemAdmin(admin.ModelAdmin):
         return f"${obj.price_at_purchase}"
 
     price_display.short_description = "Price"
+
+
+# Unregister the default User admin and register our custom one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(Meetup)
+class MeetupAdmin(admin.ModelAdmin):
+    list_display = ("title", "creator", "event_type", "date", "created_at")
+    list_filter = ("event_type", "date", "created_at")
+    search_fields = ("title", "description", "creator__username")
+    prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("title", "slug", "description", "creator")}),
+        ("Event Details", {"fields": ("date", "event_type", "link", "location")}),
+        ("Metadata", {"fields": ("created_at", "updated_at")}),
+    )
+    raw_id_fields = ("creator",)
 
 
 @admin.register(ProgressTracker)
