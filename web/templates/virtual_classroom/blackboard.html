@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">{% trans "Classroom Blackboard" %}</h1>
+      <!-- Blackboard Content -->
+      <div class="bg-gray-900 rounded-lg p-8 mb-6">
+        <div class="text-white text-lg">
+          <h2 class="text-xl font-bold mb-4">{% trans "Today's Lesson" %}</h2>
+          <ul class="list-disc list-inside space-y-2">
+            <li>Introduction to the topic</li>
+            <li>Key concepts and definitions</li>
+            <li>Practice exercises</li>
+            <li>Group discussion points</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center">
+        <a href="javascript:history.back()"
+           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
+          {% trans "Back to Classroom" %}
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
