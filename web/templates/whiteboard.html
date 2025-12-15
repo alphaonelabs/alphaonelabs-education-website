@@ -92,7 +92,7 @@
       let imageScale = 1.0;
       let uploadedImage = null;
 
-     function isDarkMode() {
+      function isDarkMode() {
           return document.documentElement.classList.contains('dark') ||
               window.matchMedia('(prefers-color-scheme: dark)').matches;
       }
@@ -189,9 +189,16 @@
               };
           }
       });
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const handleThemeChange = () => {
           initializeCanvas();
           setDefaultPenColor();
+      };
+
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handleThemeChange);
+
+      new MutationObserver(handleThemeChange).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class'],
       });
       downloadBtn.addEventListener('click', () => {
           const dataURL = canvas.toDataURL("image/png");
