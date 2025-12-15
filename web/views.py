@@ -182,6 +182,7 @@ from .models import (
 from .notifications import (
     notify_session_reminder,
     notify_teacher_new_enrollment,
+    notify_teacher_waiting_room_join,
     notify_team_goal_completion,
     notify_team_invite,
     notify_team_invite_response,
@@ -8662,6 +8663,7 @@ def join_session_waiting_room(request, course_slug):
                 f"You have joined the waiting room for the next session of {course.title}. "
                 f"You'll be notified when a new session is scheduled.",
             )
+        notify_teacher_waiting_room_join(session_waiting_room, request.user)
     else:
         messages.info(request, "You are already in the waiting room for the next session of this course.")
 
