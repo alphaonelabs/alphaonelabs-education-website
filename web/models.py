@@ -3139,6 +3139,7 @@ class Flashcard(models.Model):
     def __str__(self):
         return f"{self.deck.name} - Card {self.order}"
 
+
 class VirtualClassroom(models.Model):
     """Model for storing virtual classroom instances."""
 
