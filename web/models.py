@@ -689,8 +689,8 @@ class EducationalVideo(models.Model):
     @property
     def thumbnail_url(self):
         """
-        Build the URL for YouTube’s high-quality default thumbnail.
-        Returns None if this isn’t a YouTube video.
+        Build the URL for YouTube's high-quality default thumbnail.
+        Returns None if this isn't a YouTube video.
         """
         vid = self.youtube_id
         if vid:
@@ -2339,25 +2339,83 @@ class UserQuiz(models.Model):
 
 
 class WaitingRoom(models.Model):
-    """Model for storing waiting room requests for courses on specific subjects."""
+    """Model for storing waiting room requests.
+
+    Can be used for two purposes:
+    1. Waiting for a new course to be created on a subject/topic (creator, title, subject, topics are set)
+    2. Waiting for the next session of an existing course (course is set)
+    """
 
     STATUS_CHOICES = [("open", "Open"), ("closed", "Closed"), ("fulfilled", "Fulfilled")]
 
-    title = models.CharField(max_length=200)
+    # For waiting for new courses
+    title = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
-    subject = models.CharField(max_length=100)
-    topics = models.TextField(help_text="Comma-separated list of topics")
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_waiting_rooms")
-    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    subject = models.CharField(max_length=100, blank=True)
+    topics = models.TextField(help_text="Comma-separated list of topics", blank=True)
+    creator = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="created_waiting_rooms", null=True, blank=True
+    )
     fulfilled_course = models.ForeignKey(
         "Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="fulfilled_waiting_rooms"
     )
 
+    # For waiting for next session of existing course
+    course = models.ForeignKey(
+        "Course",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="session_waiting_rooms",
+        help_text="For waiting for next session of an existing course",
+    )
+
+    # Common fields
+    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return self.title
+        if self.course:
+            return f"Waiting room for next session of {self.course.title}"
+        return self.title or "Untitled Waiting Room"
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def topic_list(self):
+        """Return the list of topics as a list."""
+        if not self.topics:
+            return []
+        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def get_next_session(self):
+        """Get the next upcoming session for this course (if waiting for existing course)."""
+        if not self.course:
+            return None
+        from django.utils import timezone
+
+        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+    def mark_as_fulfilled(self, course=None):
+        """Mark the waiting room as fulfilled and notify participants."""
+        self.status = "fulfilled"
+        self.save()
+
+        if course:
+            from .notifications import notify_waiting_room_fulfilled
+
+            notify_waiting_room_fulfilled(self, course)
+
+    def close_waiting_room(self):
+        """Close the waiting room."""
+        self.status = "closed"
+        self.save()
 
 
 class GradeableLink(models.Model):
@@ -2384,24 +2442,6 @@ class GradeableLink(models.Model):
 
     def __str__(self):
         return self.title
-
-    def participant_count(self):
-        """Return the number of participants in the waiting room."""
-        return self.participants.count()
-
-    def topic_list(self):
-        """Return the list of topics as a list."""
-        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
-
-    def mark_as_fulfilled(self, course=None):
-        """Mark the waiting room as fulfilled and notify participants."""
-        self.status = "fulfilled"
-        self.save()
-
-        if course:
-            from .notifications import notify_waiting_room_fulfilled
-
-            notify_waiting_room_fulfilled(self, course)
 
     def get_absolute_url(self):
         return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
@@ -3045,3 +3085,94 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class VirtualClassroom(models.Model):
+    """Model for storing virtual classroom instances."""
+
+    name = models.CharField(max_length=200)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="virtual_classrooms")
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="virtual_classrooms", null=True, blank=True
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    max_students = models.PositiveIntegerField(default=30)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.teacher.username}"
+
+
+class VirtualClassroomCustomization(models.Model):
+    """Model for storing virtual classroom customization settings."""
+
+    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name="customization_settings")
+    wall_color = models.CharField(max_length=7, default="#E6E2D7")  # Hex color
+    floor_color = models.CharField(max_length=7, default="#C7B299")  # Hex color
+    desk_color = models.CharField(max_length=7, default="#8B4513")  # Hex color
+    chair_color = models.CharField(max_length=7, default="#4B0082")  # Hex color
+    board_color = models.CharField(max_length=7, default="#005C53")  # Hex color
+    number_of_rows = models.PositiveIntegerField(default=5)
+    desks_per_row = models.PositiveIntegerField(default=6)
+    has_plants = models.BooleanField(default=True)
+    has_windows = models.BooleanField(default=True)
+    has_bookshelf = models.BooleanField(default=True)
+    has_clock = models.BooleanField(default=True)
+    has_carpet = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Customization for {self.classroom.name}"
+
+    class Meta:
+        verbose_name = "Virtual Classroom Customization"
+        verbose_name_plural = "Virtual Classroom Customizations"
+
+
+class VirtualClassroomParticipant(models.Model):
+    """Model for tracking active participants in a virtual classroom."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(auto_now=True)
+    seat_id = models.CharField(max_length=20, blank=True, default="")
+
+    class Meta:
+        unique_together = ("classroom", "user")
+
+    def __str__(self):
+        return f"{self.user.username} in {self.classroom.name}"
+
+    def to_dict(self):
+        return {
+            "username": self.user.username,
+            "full_name": f"{self.user.first_name} {self.user.last_name}",
+            "joined_at": self.joined_at.isoformat(),
+            "seat_id": self.seat_id,
+            "last_active": self.last_active.isoformat(),
+        }
+
+
+class VirtualClassroomWhiteboard(models.Model):
+    """Model to store whiteboard data for each virtual classroom"""
+
+    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name="whiteboard")
+    canvas_data = models.JSONField(default=dict, blank=True)
+    background_image = models.TextField(blank=True, default="")
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"Whiteboard for {self.classroom.name}"
+
+    class Meta:
+        ordering = ["-last_updated"]
+        verbose_name = "Virtual Classroom Whiteboard"
+        verbose_name_plural = "Virtual Classroom Whiteboards"

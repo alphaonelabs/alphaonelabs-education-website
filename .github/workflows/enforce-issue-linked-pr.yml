@@ -22,12 +22,19 @@ jobs:
             const prNumber = pr.number;
             const repo = context.repo;
 
-            console.log(`Checking PR #${prNumber} for linked issues in Development section`);
+            console.log(`Checking PR #${prNumber} by ${pr.user.login} for linked issues in Development section`);
 
-            // Check for exempt users
-            const exemptUsers = ['A1L13N', 'copilot-swe-agent[bot]'];
+            // Check for exempt users (including all GitHub Copilot bot variations)
+            const exemptUsers = ['A1L13N', 'Copilot', 'copilot', 'copilot-swe-agent[bot]', 'copilot[bot]', 'github-copilot[bot]'];
             if (exemptUsers.includes(pr.user.login)) {
               console.log(`PR author ${pr.user.login} is exempt from issue link requirement`);
+              return;
+            }
+
+            // Check if PR is from a copilot branch
+            const branchName = pr.head.ref;
+            if (branchName.startsWith('copilot/')) {
+              console.log(`PR branch ${branchName} starts with 'copilot/', exempt from issue link requirement`);
               return;
             }
 
