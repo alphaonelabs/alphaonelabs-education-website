@@ -4957,6 +4957,9 @@ def virtual_classroom_detail(request, classroom_id):
             logger.exception("Error in virtual_classroom_detail customization")
             return JsonResponse({"status": "error", "message": "An internal error occurred"}, status=500)
 
+    # Get participants for the classroom
+    participants = VirtualClassroomParticipant.objects.filter(classroom=classroom).select_related("user")
+
     return render(
         request,
         "virtual_classroom/index.html",
@@ -4965,6 +4968,7 @@ def virtual_classroom_detail(request, classroom_id):
             "customization": customization,
             "is_teacher": is_teacher,
             "is_enrolled": is_enrolled,
+            "participants": participants,
         },
     )
 
