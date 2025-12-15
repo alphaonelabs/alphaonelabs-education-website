@@ -39,7 +39,7 @@ http {
         }
 
         location /media/ {
-            alias /home/{{ vps_user }}/{{ project_name }}/media/;
+            alias {{ media_dir }}/;
         }
 
         location / {
