@@ -4,8 +4,9 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
+from django.views.generic.base import RedirectView
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -26,6 +27,7 @@ from .views import (
     SurveyResultsView,
     add_goods_to_cart,
     apply_discount_via_referrer,
+    classroom_attendance,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -35,6 +37,8 @@ from .views import (
     sales_data,
     streak_detail,
     submit_survey,
+    update_session_attendance,
+    update_student_attendance,
 )
 
 # Non-prefixed URLs
@@ -446,9 +450,14 @@ urlpatterns += i18n_patterns(
         name="mark_session_completed",
     ),
     path(
-        "update_student_attendance/",
-        views.update_student_attendance,
-        name="update_student_attendance",
+        "update_student_attendance/<int:classroom_id>/",
+        RedirectView.as_view(pattern_name="update_student_attendance", permanent=False),
+        name="update_student_attendance_legacy",
+    ),
+    path(
+        "update_session_attendance/",
+        update_session_attendance,
+        name="update_session_attendance",
     ),
     path(
         "get_student_attendance/",
@@ -484,13 +493,134 @@ urlpatterns += i18n_patterns(
         views.create_membership_subscription,
         name="create_membership_subscription",
     ),
-    path("membership/success/", views.membership_success, name="membership_success"),
-    path("membership/settings/", views.membership_settings, name="membership_settings"),
-    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
-    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
-    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
-    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
-    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    path(
+        "membership/success/",
+        views.membership_success,
+        name="membership_success",
+    ),
+    path(
+        "membership/settings/",
+        views.membership_settings,
+        name="membership_settings",
+    ),
+    path(
+        "membership/cancel/",
+        views.cancel_membership,
+        name="cancel_membership",
+    ),
+    path(
+        "membership/reactivate/",
+        views.reactivate_membership,
+        name="reactivate_membership",
+    ),
+    path(
+        "membership/update-payment-method/",
+        views.update_payment_method,
+        name="update_payment_method",
+    ),
+    path(
+        "membership/update-payment-method/api/",
+        views.update_payment_method_api,
+        name="update_payment_method_api",
+    ),
+    path(
+        "test-sentry-error/",
+        lambda _request: 1 / 0,
+        name="test_sentry",
+    ),
+    # Virtual Classroom URLs
+    path(
+        "virtual-classroom/",
+        login_required(views.virtual_classroom_list),
+        name="virtual_classroom_list",
+    ),
+    path(
+        "virtual-classroom/create/",
+        login_required(views.virtual_classroom_create),
+        name="virtual_classroom_create",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/",
+        login_required(views.virtual_classroom_detail),
+        name="virtual_classroom_detail",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/edit/",
+        login_required(views.virtual_classroom_edit),
+        name="virtual_classroom_edit",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/customize/",
+        login_required(views.virtual_classroom_customize),
+        name="virtual_classroom_customize",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/delete/",
+        login_required(views.virtual_classroom_delete),
+        name="virtual_classroom_delete",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/blackboard/",
+        login_required(views.classroom_blackboard),
+        name="classroom_blackboard",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/attendance/",
+        login_required(classroom_attendance),
+        name="classroom_attendance",
+    ),
+    path(
+        "attendance/<int:classroom_id>/update/",
+        login_required(update_student_attendance),
+        name="update_student_attendance",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/reset-attendance/",
+        login_required(views.reset_attendance),
+        name="reset_attendance",
+    ),
+    # Whiteboard URLs (nested under virtual-classroom)
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/",
+        login_required(views_whiteboard.classroom_whiteboard),
+        name="classroom_whiteboard",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/data/",
+        login_required(views_whiteboard.get_whiteboard_data),
+        name="get_whiteboard_data",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/save/",
+        login_required(views_whiteboard.save_whiteboard_data),
+        name="save_whiteboard_data",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/whiteboard/clear/",
+        login_required(views_whiteboard.clear_whiteboard),
+        name="clear_whiteboard",
+    ),
+    # Legacy whiteboard URL redirects (temporary)
+    path(
+        "whiteboard/<int:classroom_id>/",
+        RedirectView.as_view(pattern_name="classroom_whiteboard", permanent=False),
+        name="classroom_whiteboard_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/data/",
+        RedirectView.as_view(pattern_name="get_whiteboard_data", permanent=False),
+        name="get_whiteboard_data_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/save/",
+        RedirectView.as_view(pattern_name="save_whiteboard_data", permanent=False),
+        name="save_whiteboard_data_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/clear/",
+        RedirectView.as_view(pattern_name="clear_whiteboard", permanent=False),
+        name="clear_whiteboard_legacy",
+    ),
     prefix_default_language=True,
 )
 
