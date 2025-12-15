@@ -202,6 +202,40 @@ def notify_waiting_room_fulfilled(waiting_room, course):
         send_notification(waiting_room.creator, notification_data)
 
 
+def notify_teacher_waiting_room_join(waiting_room, participant):
+    """Notify the course teacher when a participant joins a session waiting room."""
+    course = getattr(waiting_room, "course", None)
+    if not course or not getattr(course, "teacher", None) or not course.teacher.email:
+        return
+
+    teacher = course.teacher
+    subject = f"New waiting room participant for {course.title}"
+    user_message = (
+        f"You have joined the waiting room for the next session of {course.title}. "
+        "You'll be notified when a new session is scheduled."
+    )
+
+    site_url = getattr(settings, "SITE_URL", "")
+    html_message = render_to_string(
+        "emails/waiting_room_join_teacher.html",
+        {
+            "teacher": teacher,
+            "participant": participant,
+            "course": course,
+            "waiting_room": waiting_room,
+            "user_message": user_message,
+            "site_url": site_url,
+        },
+    )
+
+    send_mail(subject, "", settings.DEFAULT_FROM_EMAIL, [teacher.email], html_message=html_message)
+
+    slack_message = (
+        f"👥 {participant.username} joined the waiting room for {course.title}. " f"Teacher notified ({teacher.email})."
+    )
+    send_slack_notification(slack_message)
+
+
 def send_email(subject, message, recipient_list):
     """
     Send an email to the specified recipients and notify Slack.
