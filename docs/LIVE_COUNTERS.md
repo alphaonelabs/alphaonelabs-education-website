@@ -27,13 +27,13 @@ The live counters feature displays dynamic statistics about platform activity an
 ```python
 class LiveActivityEvent(models.Model):
     """Model for tracking live activity events like quiz completions, enrollments, etc."""
-    
+
     EVENT_TYPES = [
         ("quiz_completed", "Quiz Completed"),
         ("enrollment", "Course Enrollment"),
         ("achievement", "Achievement Earned"),
     ]
-    
+
     event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="activity_events")
     message = models.CharField(max_length=255)
