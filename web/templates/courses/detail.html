@@ -123,6 +123,31 @@
                   <span class="text-blue-600 dark:text-blue-400 font-bold">{{ course.enrollments.count }}</span> / {{ course.max_students }}
                 </span>
               </div>
+              {% if virtual_classroom %}
+                <div class="flex items-center justify-between py-2 border-t dark:border-gray-700">
+                  <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                    <i class="fas fa-chalkboard text-purple-500 dark:text-purple-400 mr-2"></i>
+                    Virtual Classroom
+                  </span>
+                  <a href="{% url 'virtual_classroom_detail' classroom_id=virtual_classroom.id %}"
+                     class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+                    <i class="fas fa-door-open mr-2"></i>
+                    Enter
+                  </a>
+                </div>
+              {% elif is_teacher %}
+                <div class="flex items-center justify-between py-2 border-t dark:border-gray-700">
+                  <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                    <i class="fas fa-chalkboard text-purple-500 dark:text-purple-400 mr-2"></i>
+                    Virtual Classroom
+                  </span>
+                  <a href="{% url 'virtual_classroom_create' %}?course={{ course.id }}"
+                     class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create
+                  </a>
+                </div>
+              {% endif %}
               <div class="transform hover:-translate-y-1 transition-all duration-200 hover:shadow-md rounded-lg">
                 <a href="#course_reviews" class="block">
                   <div class="cursor-pointer flex items-center justify-between py-3 px-4 border dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400">
@@ -214,11 +239,13 @@
                       Message Teacher
                     </a>
                   {% endif %}
-                  <a href="{% url 'public_profile' course.teacher.username %}"
-                     class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg {% if user != course.teacher %}ml-2{% endif %} transition duration-200">
-                    <i class="fas fa-user mr-2"></i>
-                    View Profile
-                  </a>
+                  {% if course.teacher.profile.is_profile_public %}
+                    <a href="{% url 'public_profile' course.teacher.username %}"
+                       class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg {% if user != course.teacher %}ml-2{% endif %} transition duration-200">
+                      <i class="fas fa-user mr-2"></i>
+                      View Profile
+                    </a>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -367,6 +394,44 @@
                       </div>
                     {% endfor %}
                   </div>
+                  {% if not next_session and sessions %}
+                    <!-- Waiting room section when all sessions are in the past -->
+                    <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <div class="flex items-start space-x-3">
+                        <i class="fas fa-clock-rotate-left text-lg mt-1"></i>
+                        <div class="flex-1">
+                          <h3 class="font-semibold mb-2">All sessions have ended</h3>
+                          <p class="text-sm mb-3">No upcoming sessions are currently scheduled for this course.</p>
+                          {% if user.is_authenticated %}
+                            {% if user_in_session_waiting_room %}
+                              <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                                <span class="text-sm font-medium">You're in the waiting room for the next session</span>
+                                <a href="{% url 'leave_session_waiting_room' course.slug %}"
+                                   class="ml-2 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                                  Leave
+                                </a>
+                              </div>
+                            {% else %}
+                              <a href="{% url 'join_session_waiting_room' course.slug %}"
+                                 class="inline-flex items-center bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-user-plus mr-2"></i>
+                                Join waiting room for next session
+                              </a>
+                            {% endif %}
+                          {% else %}
+                            <p class="text-sm">
+                              <a href="{% url 'account_login' %}?next={% url 'course_detail' course.slug %}"
+                                 class="inline-flex items-center bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                Login to join waiting room
+                              </a>
+                            </p>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
                 {% else %}
                   <p class="text-sm text-gray-600 dark:text-gray-400">No sessions scheduled yet.</p>
                 {% endif %}
@@ -570,9 +635,52 @@
               </p>
               <!-- Button to open Twitter share dialog -->
               <button id="open-share-window"
-                      class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+                      class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center">
+                <i class="fab fa-twitter mr-2"></i>
                 Share on Twitter
               </button>
+            </section>
+            <!-- Virtual Classroom Section -->
+            <section id="virtual-classroom"
+                     class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-8">
+              <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Virtual Classroom</h3>
+              {% if virtual_classroom %}
+                <div class="space-y-4">
+                  <p class="text-gray-600 dark:text-gray-400">
+                    Enter your virtual classroom to interact with other students and access course materials in real-time.
+                  </p>
+                  <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'virtual_classroom_detail' classroom_id=virtual_classroom.id %}"
+                       class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-door-open mr-2"></i>
+                      Enter Virtual Classroom
+                    </a>
+                    <a href="{% url 'classroom_whiteboard' classroom_id=virtual_classroom.id %}"
+                       class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-chalkboard mr-2"></i>
+                      Whiteboard
+                    </a>
+                  </div>
+                </div>
+              {% elif is_teacher %}
+                <div class="space-y-4">
+                  <p class="text-gray-600 dark:text-gray-400">
+                    Create a virtual classroom to provide an interactive learning environment for your students.
+                  </p>
+                  <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'virtual_classroom_create' %}?course={{ course.id }}"
+                       class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-plus mr-2"></i>
+                      Create Virtual Classroom
+                    </a>
+                    <a href="{% url 'classroom_whiteboard' classroom_id=course.id %}"
+                       class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-chalkboard mr-2"></i>
+                      Whiteboard
+                    </a>
+                  </div>
+                </div>
+              {% endif %}
             </section>
             <!-- Tabbed Interface for Course Information -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -809,11 +917,13 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                       <div class="flex space-x-2">
-                                        <a href="{% url 'public_profile' enrollment.student.username %}"
-                                           class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                           title="View profile">
-                                          <i class="fas fa-user-circle"></i>
-                                        </a>
+                                        {% if enrollment.student.profile.is_profile_public %}
+                                          <a href="{% url 'public_profile' enrollment.student.username %}"
+                                             class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                             title="View profile">
+                                            <i class="fas fa-user-circle"></i>
+                                          </a>
+                                        {% endif %}
                                         {% if user == course.teacher %}
                                           <a href="{% url 'student_management' course.slug enrollment.student.id %}"
                                              class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
