@@ -918,7 +918,7 @@
               console.log(pair[0] + ': ' + pair[1]);
           }
 
-          fetch('{% url "update_student_attendance" %}', {
+          fetch('{% url "update_session_attendance" %}', {
                   method: 'POST',
                   body: formData,
                   headers: {
@@ -1029,7 +1029,7 @@
               console.log(pair[0] + ': ' + pair[1]);
           }
 
-          fetch('{% url "update_student_attendance" %}', {
+          fetch('{% url "update_session_attendance" %}', {
                   method: 'POST',
                   body: formData,
                   headers: {
