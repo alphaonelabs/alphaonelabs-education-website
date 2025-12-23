@@ -1,0 +1,63 @@
+<!-- COMMUNITY navigation items - shared between desktop and mobile -->
+<a href="{% url 'waiting_rooms' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
+  <span>Learning Requests</span>
+</a>
+<a href="{% url 'surveys' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %} ">
+  <i class="fas fa-square-poll-vertical mr-2 text-teal-500"></i>
+  <span>Surveys</span>
+</a>
+<a href="{% url 'waiting_room_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-door-open mr-2 text-teal-500"></i>
+  <span>Waiting Rooms</span>
+</a>
+<a href="{% url 'forum_categories' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-comments mr-2 text-teal-500"></i>
+  <span>Forum</span>
+</a>
+<a href="{% url 'blog_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-blog mr-2 text-teal-500"></i>
+  <span>Blog</span>
+</a>
+<a href="{% url 'meme_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-face-smile mr-2 text-teal-500"></i>
+  <span>Edu Memes</span>
+</a>
+<a href="{% url 'features' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-lightbulb mr-2 text-teal-500"></i>
+  <span>Features</span>
+</a>
+<a href="{% url 'users_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-users mr-2 text-teal-500"></i>
+  <span>Users</span>
+</a>
+<a href="{% url 'success_story_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-star mr-2 text-teal-500"></i>
+  <span>Success Stories</span>
+</a>
+<a href="{% url 'team_goals' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-user-friends mr-2 text-teal-500"></i>
+  <span>Peer Network</span>
+</a>
+<a href="{% url 'team_goals' %}?view=teams"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-users-cog mr-2 text-teal-500"></i>
+  <span>Teams</span>
+</a>
+{% if mobile %}
+  <a href="{% url 'video_request_list' %}?view=teams"
+     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+    <i class="fa fa-play-circle mr-2 text-teal-500"></i>
+    <span>Video Requests</span>
+  </a>
+{% endif %}
