@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 
+{% load static %}
+
 {% block title %}
-  Product Details - {{ product.name }}
+  {{ product.name }} - Product Details
 {% endblock title %}
+{% block meta_description %}
+  {{ product.description|striptags|truncatewords:30 }}
+{% endblock meta_description %}
+{% block og_title %}
+  {{ product.name }}
+{% endblock og_title %}
+{% block og_type %}
+  product
+{% endblock og_type %}
+{% block og_image %}
+  {% if product.images.first %}
+    {{ product.images.first.image.url }}
+  {% else %}
+    {% static 'images/logo.png' %}
+  {% endif %}
+{% endblock og_image %}
 {% block content %}
   <style>
       /* Hide scrollbar for Chrome, Safari and Opera */
