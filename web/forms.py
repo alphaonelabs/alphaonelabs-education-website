@@ -32,6 +32,7 @@ from .models import (
     Goods,
     GradeableLink,
     LinkGrade,
+    Meetup,
     Meme,
     NotificationPreference,
     PeerChallenge,
@@ -95,6 +96,7 @@ __all__ = [
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
+    "MeetupForm",
     "EducationalVideoForm",
     "ProgressTrackerForm",
     "SuccessStoryForm",
@@ -1744,6 +1746,36 @@ class StudentEnrollmentForm(forms.Form):
     email = forms.EmailField(
         required=True, widget=TailwindEmailInput(attrs={"placeholder": "Student Email"}), label="Student Email"
     )
+
+
+class MeetupForm(forms.ModelForm):
+    """Form for creating and editing meetups and webinars."""
+
+    class Meta:
+        model = Meetup
+        fields: ClassVar = ["title", "description", "date", "link", "location", "event_type"]
+        widgets: ClassVar = {
+            "title": TailwindInput(attrs={"required": True}),
+            "description": TailwindTextarea(attrs={"required": True}),
+            "date": TailwindDateTimeInput(attrs={"type": "datetime-local", "required": True}),
+            "link": TailwindInput(attrs={"type": "url"}),
+            "location": TailwindInput(),
+            "event_type": TailwindSelect(
+                attrs={"required": True},
+                choices=[("online", "Online"), ("in_person", "In Person")],
+            ),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        event_type = cleaned_data.get("event_type")
+        location = cleaned_data.get("location")
+        link = cleaned_data.get("link")
+        if event_type == "in_person" and not location:
+            self.add_error("location", "Location is required for in-person events.")
+        if event_type == "online" and not link:
+            self.add_error("link", "Link is required for online events.")
+        return cleaned_data
 
 
 class QuizForm(forms.ModelForm):
