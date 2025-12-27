@@ -3,9 +3,6 @@ name = "education-website"
 version = "0.1.0"
 description = "Alpha One Labs Educational Platform"
 authors = ["Alpha One Labs <info@alphaonelabs.com>"]
-packages = [
-    { include = "web" }
-]
 
 [tool.poetry.dependencies]
 python = "^3.10"
