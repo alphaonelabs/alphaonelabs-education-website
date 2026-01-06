@@ -216,6 +216,12 @@ def sitemap(request):
     return render(request, "sitemap.html")
 
 
+def robotics_playground(request):
+    """View for the Virtual Robotics Playground."""
+    return render(request, "robotics_playground.html")
+
+
+
 def handle_referral(request, code):
     """Handle referral link with the format /en/ref/CODE/ and redirect to homepage."""
     # Store referral code in session
