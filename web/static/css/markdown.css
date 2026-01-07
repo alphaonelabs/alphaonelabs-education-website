@@ -117,3 +117,60 @@
 .dark .markdown-content td {
   border-color: #4b5563; /* gray-600 */
 }
+
+/* ================================
+   Mobile horizontal scroll indicators
+   for Student Details table
+   ================================ */
+
+.student-table-gradient-left,
+.student-table-gradient-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 10;
+}
+
+.student-table-gradient-left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+.student-table-gradient-right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+/* Dark mode */
+.dark .student-table-gradient-left {
+  background: linear-gradient(
+    to right,
+    rgba(31, 41, 55, 0.95),
+    rgba(31, 41, 55, 0)
+  );
+}
+
+.dark .student-table-gradient-right {
+  background: linear-gradient(
+    to left,
+    rgba(31, 41, 55, 0.95),
+    rgba(31, 41, 55, 0)
+  );
+}
+
+/* Hide indicators on desktop */
+@media (min-width: 768px) {
+  .student-table-gradient-left,
+  .student-table-gradient-right {
+    display: none;
+  }
+}
