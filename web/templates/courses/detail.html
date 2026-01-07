@@ -804,8 +804,10 @@
                       </div>
                       {% if course.enrollments.exists %}
                         <div class="relative overflow-hidden">
-                          <div class="overflow-x-auto scrollbar-hide">
-                            <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+                          <div class="overflow-x-auto scrollbar-hide focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:ring-inset"
+                               tabindex="0"
+                               aria-label="Student enrollment table. Scroll horizontally to view additional columns.">
+                            <table class="min-w-[800px] w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                               <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
                                   <th scope="col"
@@ -942,6 +944,10 @@
                                 {% endfor %}
                               </tbody>
                             </table>
+                          </div>
+                          <div class="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white/95 to-transparent dark:from-gray-800/95 md:hidden">
+                          </div>
+                          <div class="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white/95 to-transparent dark:from-gray-800/95 md:hidden">
                           </div>
                         </div>
                       {% else %}
