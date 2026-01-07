@@ -804,9 +804,7 @@
                       </div>
                       {% if course.enrollments.exists %}
                         <div class="relative overflow-hidden">
-                          <div class="overflow-x-auto scrollbar-hide"
-                               tabindex="0"
-                               aria-label="Student enrollment table. Scroll horizontally to view additional columns.">
+                          <div class="overflow-x-auto scrollbar-hide">
                             <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                               <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -944,11 +942,6 @@
                                 {% endfor %}
                               </tbody>
                             </table>
-                          </div>
-                          <!-- Mobile scroll indicators -->
-                          <div class="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white/95 to-transparent dark:from-gray-800/95 md:hidden">
-                          </div>
-                          <div class="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white/95 to-transparent dark:from-gray-800/95 md:hidden">
                           </div>
                         </div>
                       {% else %}
