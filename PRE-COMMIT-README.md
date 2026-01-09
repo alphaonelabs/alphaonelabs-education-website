@@ -2,7 +2,7 @@
 
 This document explains how **pre-commit** is used in this repository, how to install and enable it, and how it integrates with local development and CI.
 
----
+
 
 ## What is pre-commit?
 
@@ -22,7 +22,6 @@ Benefits:
 ### 1. Install pre-commit
 
 You can install `pre-commit` using pip:
-
 
 pip install pre-commit
 
