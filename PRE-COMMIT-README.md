@@ -6,7 +6,7 @@ This document explains how **pre-commit** is used in this repository, how to ins
 
 ## What is pre-commit?
 
-**pre-commit** is a framework for managing and running Git hooks. It helps ensure code quality and consistency by automatically running checks (such as formatting, linting, and static analysis) **before** code is committed.
+**pre-commit** is a framework for managing and running Git hooks. It helps ensure code quality and consistency by automatically running checks (such as formatting, linting, and static analysis) before code is committed.
 
 Benefits:
 
