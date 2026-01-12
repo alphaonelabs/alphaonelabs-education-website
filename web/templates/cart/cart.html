@@ -164,6 +164,7 @@
         });
 
         let stripe;
+        let isFreeCheckout = false;
         try {
             console.log('[Page Load] Starting cart checkout initialization');
 
@@ -198,6 +199,22 @@
                 console.log('[Initialize] Fetching payment intent from:', "{% url 'create_cart_payment_intent' %}");
                 const response = await fetch("{% url 'create_cart_payment_intent' %}");
                 const data = await response.json();
+
+                if (data.free) {
+                    console.log('[Initialize] Free checkout detected');
+                    isFreeCheckout = true;
+                    
+                    // Hide payment element
+                    const paymentElement = document.getElementById("payment-element");
+                    if (paymentElement) paymentElement.style.display = "none";
+                    
+                    // Update button text
+                    const btnText = document.getElementById("button-text");
+                    if (btnText) btnText.textContent = "Complete Enrollment";
+                    
+                    return;
+                }
+
                 console.log('[Initialize] Payment intent response:', {
                     status: response.status,
                     hasClientSecret: !!data.clientSecret,
@@ -255,6 +272,25 @@
                 return_url: window.location.origin + "{% url 'checkout_success' %}"
             };
             console.log('[Submit] Return URL:', confirmParams.return_url);
+
+            if (isFreeCheckout) {
+                console.log('[Submit] Processing free checkout');
+                // Check if email is required (not logged in)
+                if (!isAuthenticated) {
+                    const emailInput = document.getElementById('email');
+                    if (!emailInput || !emailInput.value) {
+                         const messageDiv = document.querySelector("#payment-message");
+                         messageDiv.textContent = "Please enter your email address.";
+                         messageDiv.classList.add("text-red-500");
+                         setLoading(false);
+                         return;
+                    }
+                }
+                
+                // Allow form submission to proceed
+                document.getElementById('checkout-form').submit();
+                return;
+            }
 
             if (!isAuthenticated) {
                 const emailInput = document.getElementById('email');

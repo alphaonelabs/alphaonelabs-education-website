@@ -20,7 +20,7 @@ import requests
 import stripe
 import tweepy
 from allauth.account.models import EmailAddress
-from allauth.account.utils import send_email_confirmation
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
@@ -2754,6 +2754,9 @@ def create_cart_payment_intent(request):
     if not cart.items.exists():
         return JsonResponse({"error": "Cart is empty"}, status=400)
 
+    if cart.total == 0:
+        return JsonResponse({"free": True})
+
     try:
         # Create a PaymentIntent with the cart total
         intent = stripe.PaymentIntent.create(
@@ -2774,17 +2777,33 @@ def checkout_success(request):
     """Handle successful checkout and payment confirmation."""
     payment_intent_id = request.GET.get("payment_intent")
 
+    payment_intent = None
+    email = None
+    is_free_checkout = False
+
+    # Handle free checkout (POST request)
+    if request.method == "POST":
+        cart = get_or_create_cart(request)
+        if cart.total == 0:
+            is_free_checkout = True
+            payment_intent_id = f"free_{timezone.now().timestamp()}"
+            email = request.POST.get("email")
+        else:
+            messages.error(request, "This cart requires payment invalid request.")
+            return redirect("cart_view")
+
     if not payment_intent_id:
         messages.error(request, "No payment information found.")
         return redirect("cart_view")
 
     try:
-        # Verify the payment intent
-        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        # Verify the payment intent only for paid checkouts
+        if not is_free_checkout:
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
 
-        if payment_intent.status != "succeeded":
-            messages.error(request, "Payment was not successful.")
-            return redirect("cart_view")
+            if payment_intent.status != "succeeded":
+                messages.error(request, "Payment was not successful.")
+                return redirect("cart_view")
 
         cart = get_or_create_cart(request)
 
@@ -2794,7 +2813,9 @@ def checkout_success(request):
 
         # Handle guest checkout
         if not request.user.is_authenticated:
-            email = payment_intent.receipt_email
+            if not is_free_checkout:
+                email = payment_intent.receipt_email
+
             if not email:
                 messages.error(request, "No email provided for guest checkout.")
                 return redirect("cart_view")
@@ -2844,17 +2865,32 @@ def checkout_success(request):
         # Extract shipping address from Stripe PaymentIntent
         shipping_address = None
         if has_goods:
-            shipping_data = getattr(payment_intent, "shipping", None)
-            if shipping_data:
-                # Construct structured shipping address
-                shipping_address = {
-                    "line1": shipping_data.address.line1,
-                    "line2": shipping_data.address.line2 or "",
-                    "city": shipping_data.address.city,
-                    "state": shipping_data.address.state,
-                    "postal_code": shipping_data.address.postal_code,
-                    "country": shipping_data.address.country,
-                }
+            if is_free_checkout:
+                # Extract address from POST data
+                address_line1 = request.POST.get("address")
+                if address_line1:
+                    shipping_address = {
+                        "name": request.user.get_full_name() if request.user.is_authenticated else "Guest",
+                        "address": {
+                            "line1": address_line1,
+                            "city": request.POST.get("city"),
+                            "state": request.POST.get("state"),
+                            "postal_code": request.POST.get("postal_code"),
+                            "country": request.POST.get("country"),
+                        },
+                    }
+            else:
+                shipping_data = getattr(payment_intent, "shipping", None)
+                if shipping_data:
+                    # Construct structured shipping address
+                    shipping_address = {
+                        "line1": shipping_data.address.line1,
+                        "line2": shipping_data.address.line2 or "",
+                        "city": shipping_data.address.city,
+                        "state": shipping_data.address.state,
+                        "postal_code": shipping_data.address.postal_code,
+                        "country": shipping_data.address.country,
+                    }
 
         # Create the Order with shipping address
         order = Order.objects.create(

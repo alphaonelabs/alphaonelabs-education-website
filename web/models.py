@@ -1181,7 +1181,7 @@ class Cart(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                check=models.Q(user__isnull=False) | models.Q(session_key__gt=""),
+                condition=models.Q(user__isnull=False) | models.Q(session_key__gt=""),
                 name="cart_user_or_session_key",
             )
         ]
@@ -2970,7 +2970,7 @@ class ForumVote(models.Model):
         unique_together = [("user", "topic"), ("user", "reply")]
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(topic__isnull=False, reply__isnull=True)
                     | models.Q(topic__isnull=True, reply__isnull=False)
                 ),
