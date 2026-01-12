@@ -118,7 +118,7 @@ CSRF_TRUSTED_ORIGINS = env.list(
 )
 
 # Timezone settings
-TIME_ZONE = "America/New_York"
+TIME_ZONE = "UTC"
 USE_TZ = True
 
 # Error handling
@@ -166,6 +166,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "web.middleware.WebRequestMiddleware",
+    "web.middleware.TimeZoneMiddleware",
     # "web.middleware.GlobalExceptionMiddleware",
 ]
 
