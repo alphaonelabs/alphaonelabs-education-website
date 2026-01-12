@@ -95,6 +95,21 @@
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
             crossorigin="anonymous"></script>
     <script>
+        // Security utility function to sanitize text input
+        function sanitizeText(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[<>&"']/g, function(match) {
+                const escapeMap = {
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '&': '&amp;',
+                    '"': '&quot;',
+                    "'": '&#x27;'
+                };
+                return escapeMap[match];
+            });
+        }
+
         // Toggle the language dropdown
         function toggleLanguageDropdown() {
             document.getElementById('language-dropdown').classList.toggle('hidden');
