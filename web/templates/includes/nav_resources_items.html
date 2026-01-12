@@ -1,0 +1,39 @@
+<!-- RESOURCES navigation items - shared between desktop and mobile -->
+<a href="{% url 'virtual_lab:virtual_lab_home' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% endif %}">
+  <i class="fas fa-flask mr-2 text-teal-500"></i>
+  <span>Virtual Lab</span>
+</a>
+<a href="{% url 'progress_visualization' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-chart-line mr-2 text-teal-500"></i>
+  <span>
+    {% if mobile %}
+      Trackers
+    {% else %}
+      Progress Trackers
+    {% endif %}
+  </span>
+</a>
+<a href="{% url 'gradeable_link_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-link mr-2 text-teal-500"></i>
+  <span>Grade Links</span>
+</a>
+<a href="{% url 'goods_listing' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-store mr-2 text-teal-500"></i>
+  <span>Products</span>
+</a>
+<a href="{% url 'goods_listing' %}?type=storefront"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-shopping-basket mr-2 text-teal-500"></i>
+  <span>Storefronts</span>
+</a>
+<a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas"
+   target="_blank"
+   rel="noopener"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-code mr-2 text-teal-500"></i>
+  <span>GSOC'25</span>
+</a>
