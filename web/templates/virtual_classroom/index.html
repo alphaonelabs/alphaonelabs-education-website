@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="classroom-id" content="{{ classroom.id }}" />
+    <title>Virtual Classroom</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-gray-100">
+    <header class="bg-white shadow-md p-4">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-800">{{ classroom.name }}</h1>
+        <div class="flex items-center space-x-4">
+          <!-- Back to Course Button -->
+          {% if classroom.course %}
+            <a href="{% url 'course_detail' slug=classroom.course.slug %}"
+               class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center gap-2">
+              <i data-lucide="arrow-left"></i>
+              <span>Back to Course</span>
+            </a>
+          {% endif %}
+          <!-- Student List Button -->
+          <button id="toggleStudentList"
+                  class="px-4 py-2 bg-teal-300 text-white rounded-md hover:bg-teal-400 transition-colors flex items-center gap-2">
+            <i data-lucide="users"></i>
+            <span>Students</span>
+          </button>
+          <button id="toggleControls"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <i data-lucide="layout"></i>
+            <span>Show Controls</span>
+          </button>
+        </div>
+      </div>
+    </header>
+    <!-- Student List Sidebar -->
+    <div id="studentList"
+         class="fixed right-0 top-0 h-full w-80 bg-white shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+      <div class="p-4 border-b">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold text-gray-800">Active Students</h2>
+          <button id="closeStudentList" class="text-gray-500 hover:text-gray-700">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-4">
+        <div id="studentsList" class="space-y-3">
+          <!-- Display participants -->
+          {% for participant in participants %}
+            <div class="flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              <div class="flex items-center space-x-3">
+                {% if participant.user.profile.avatar %}
+                  <img src="{{ participant.user.profile.avatar.url }}"
+                       alt="{{ participant.user.username }}"
+                       class="w-8 h-8 rounded-full" />
+                {% else %}
+                  <div class="w-8 h-8 rounded-full bg-teal-300 flex items-center justify-center text-white text-xs font-bold">
+                    {{ participant.user.username|first|upper }}
+                  </div>
+                {% endif %}
+                <div>
+                  <p class="font-medium text-sm text-gray-800">{{ participant.user.username }}</p>
+                  <p class="text-xs text-gray-600">Joined {{ participant.joined_at|date:"M d, Y H:i" }}</p>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                {% if participant.seat_id %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Seat {{ participant.seat_id }}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">Idle</span>
+                {% endif %}
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-gray-500 text-center py-8">No other students in the classroom yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <!-- Control Panel -->
+      <div id="controlPanel"
+           class="hidden w-full md:w-1/4 bg-white p-4 overflow-auto shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Customize Classroom</h2>
+        <!-- Color Settings -->
+        <div class="space-y-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Wall Color</label>
+            <div class="flex items-center">
+              <input type="color"
+                     id="wallColor"
+                     value="{{ customization.wall_color|default:'#E6E2D7' }}"
+                     class="w-10 h-10 rounded cursor-pointer" />
+              <span class="ml-2 text-sm" id="wallColorValue">{{ customization.wall_color|default:'#E6E2D7' }}</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Floor Color</label>
+            <div class="flex items-center">
+              <input type="color"
+                     id="floorColor"
+                     value="{{ customization.floor_color|default:'#C7B299' }}"
+                     class="w-10 h-10 rounded cursor-pointer" />
+              <span class="ml-2 text-sm" id="floorColorValue">{{ customization.floor_color|default:'#C7B299' }}</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Desk Color</label>
+            <div class="flex items-center">
+              <input type="color"
+                     id="deskColor"
+                     value="{{ customization.desk_color|default:'#8B4513' }}"
+                     class="w-10 h-10 rounded cursor-pointer" />
+              <span class="ml-2 text-sm" id="deskColorValue">{{ customization.desk_color|default:'#8B4513' }}</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Chair Color</label>
+            <div class="flex items-center">
+              <input type="color"
+                     id="chairColor"
+                     value="{{ customization.chair_color|default:'#4B0082' }}"
+                     class="w-10 h-10 rounded cursor-pointer" />
+              <span class="ml-2 text-sm" id="chairColorValue">{{ customization.chair_color|default:'#4B0082' }}</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Board Color</label>
+            <div class="flex items-center">
+              <input type="color"
+                     id="boardColor"
+                     value="{{ customization.board_color|default:'#005C53' }}"
+                     class="w-10 h-10 rounded cursor-pointer" />
+              <span class="ml-2 text-sm" id="boardColorValue">{{ customization.board_color|default:'#005C53' }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Layout Settings -->
+        <div class="space-y-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Number of rows</label>
+            <input type="range"
+                   id="numRows"
+                   min="1"
+                   max="10"
+                   value="{{ customization.number_of_rows|default:5 }}"
+                   class="w-full" />
+            <span class="text-sm" id="numRowsValue">{{ customization.number_of_rows|default:5 }}</span>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Desks per Row</label>
+            <input type="range"
+                   id="desksPerRow"
+                   min="1"
+                   max="10"
+                   value="{{ customization.desks_per_row|default:6 }}"
+                   class="w-full" />
+            <span class="text-sm" id="desksPerRowValue">{{ customization.desks_per_row|default:6 }}</span>
+          </div>
+        </div>
+        <!-- Toggle Settings -->
+        <div class="space-y-3">
+          <div class="flex items-center">
+            <input type="checkbox"
+                   id="hasPlants"
+                   {% if customization.has_plants %}checked{% endif %}
+                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+            <label for="hasPlants" class="ml-2 text-sm text-gray-700">Plants</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox"
+                   id="hasWindows"
+                   {% if customization.has_windows %}checked{% endif %}
+                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+            <label for="hasWindows" class="ml-2 text-sm text-gray-700">Windows</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox"
+                   id="hasBookshelf"
+                   {% if customization.has_bookshelf %}checked{% endif %}
+                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+            <label for="hasBookshelf" class="ml-2 text-sm text-gray-700">Bookshelf</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox"
+                   id="hasClock"
+                   {% if customization.has_clock %}checked{% endif %}
+                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+            <label for="hasClock" class="ml-2 text-sm text-gray-700">Clock</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox"
+                   id="hasCarpet"
+                   {% if customization.has_carpet %}checked{% endif %}
+                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+            <label for="hasCarpet" class="ml-2 text-sm text-gray-700">Carpet</label>
+          </div>
+        </div>
+      </div>
+      <!-- Classroom Container -->
+      <div class="flex-1 p-4">
+        <div id="classroomContainer"
+             class="w-full h-[calc(100vh-10rem)] relative overflow-hidden rounded-xl shadow-xl bg-slate-800">
+          <!-- Classroom elements will be rendered here -->
+        </div>
+        <!-- Controls Info -->
+        <div class="mt-4 bg-white p-3 rounded-md shadow-md">
+          <h3 class="text-lg font-semibold mb-2">Controls</h3>
+          <div class="flex items-center flex-wrap space-x-6">
+            <div class="flex items-center">
+              <i data-lucide="move-up" class="mr-1 text-blue-600"></i>
+              <i data-lucide="move-down" class="mr-1 text-blue-600"></i>
+              <i data-lucide="move-left" class="mr-1 text-blue-600"></i>
+              <i data-lucide="move-right" class="mr-1 text-blue-600"></i>
+              <span class="text-sm">Move character</span>
+            </div>
+            <div>
+              <span class="text-sm">Customize using the control panel!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+        // Student list functionality
+        const studentList = document.getElementById('studentList');
+        const toggleStudentList = document.getElementById('toggleStudentList');
+        const closeStudentList = document.getElementById('closeStudentList');
+
+        toggleStudentList.addEventListener('click', () => {
+            studentList.classList.toggle('translate-x-full');
+        });
+
+        closeStudentList.addEventListener('click', () => {
+            studentList.classList.add('translate-x-full');
+        });
+    </script>
+    <script src="{% static 'js/virtual_classroom.js' %}"></script>
+  </body>
+</html>

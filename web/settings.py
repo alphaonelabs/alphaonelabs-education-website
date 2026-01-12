@@ -153,6 +153,8 @@ if DEBUG and not TESTING:
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Compress responses to reduce payload size
+    "django.middleware.gzip.GZipMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "web.middleware.HostnameRewriteMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -175,8 +177,9 @@ ROOT_URLCONF = "web.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates", BASE_DIR / "web/templates"],
-        "APP_DIRS": True,
+        "DIRS": [BASE_DIR / "web/templates"],
+        # Use cached loaders in production to avoid repeated template parsing
+        "APP_DIRS": DEBUG,
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.debug",
@@ -185,6 +188,21 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.last_modified",
             ],
+            **(
+                {}
+                if DEBUG
+                else {
+                    "loaders": [
+                        (
+                            "django.template.loaders.cached.Loader",
+                            [
+                                "django.template.loaders.filesystem.Loader",
+                                "django.template.loaders.app_directories.Loader",
+                            ],
+                        )
+                    ]
+                }
+            ),
         },
     },
 ]
@@ -217,6 +235,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        # Persist DB connections to avoid reconnect overhead in production
+        "CONN_MAX_AGE": 300 if not DEBUG else 0,
     }
 }
 
@@ -321,6 +341,26 @@ MEDIA_URL = "/media/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Caching configuration: fast in-memory cache by default; can be
+# overridden via environment (e.g., django-redis) without code changes.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "alphaonelabs-local",
+        "TIMEOUT": 300,
+        "OPTIONS": {"MAX_ENTRIES": 10000},
+    }
+}
+
+# Cache middleware settings (usable when wrapping views or enabling site-wide cache)
+CACHE_MIDDLEWARE_ALIAS = "default"
+CACHE_MIDDLEWARE_SECONDS = int(os.getenv("CACHE_MIDDLEWARE_SECONDS", "300"))
+CACHE_MIDDLEWARE_KEY_PREFIX = os.getenv("CACHE_MIDDLEWARE_KEY_PREFIX", "aol")
+
+# Use cached sessions in normal runtime to reduce DB hits; keep default during tests
+if not TESTING:
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 # Drop noisy Invalid Host messages from logs entirely
 LOGGING = {
@@ -465,4 +505,9 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+
+# Allow per-environment override of secure cookie behavior (useful for staging without HTTPS).
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
