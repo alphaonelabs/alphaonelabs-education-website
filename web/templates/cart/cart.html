@@ -130,7 +130,7 @@
                 <button type="submit"
                         id="submit-button"
                         class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
-                  <i class="fas fa-credit-card mr-2"></i>
+                  <i id="submit-icon" class="fas fa-credit-card mr-2"></i>
                   <span id="button-text">Checkout</span>
                   <span id="spinner" class="hidden ml-2">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -211,6 +211,12 @@
                     // Update button text
                     const btnText = document.getElementById("button-text");
                     if (btnText) btnText.textContent = "Complete Enrollment";
+
+                    // Hide the credit card icon for free checkout
+                    const submitIcon = document.getElementById("submit-icon");
+                    if (submitIcon) {
+                        submitIcon.style.display = 'none';
+                    }
                     
                     return;
                 }
@@ -275,7 +281,8 @@
 
             if (isFreeCheckout) {
                 console.log('[Submit] Processing free checkout');
-                // Check if email is required (not logged in)
+                
+                // Validate email if guest
                 if (!isAuthenticated) {
                     const emailInput = document.getElementById('email');
                     if (!emailInput || !emailInput.value) {
@@ -287,6 +294,27 @@
                     }
                 }
                 
+                // Validate shipping address if fields are present (implies has_goods)
+                const addressInput = document.getElementById('address');
+                if (addressInput) {
+                    const requiredFields = ['address', 'city', 'state', 'postal_code', 'country'];
+                    let missing = false;
+                    requiredFields.forEach(fieldId => {
+                        const el = document.getElementById(fieldId);
+                        if (!el || !el.value.trim()) {
+                            missing = true;
+                        }
+                    });
+                    
+                    if (missing) {
+                         const messageDiv = document.querySelector("#payment-message");
+                         messageDiv.textContent = "Please fill in all shipping address fields.";
+                         messageDiv.classList.add("text-red-500");
+                         setLoading(false);
+                         return;
+                    }
+                }
+
                 // Allow form submission to proceed
                 document.getElementById('checkout-form').submit();
                 return;

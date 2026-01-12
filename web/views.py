@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
 
+import uuid
 import requests
 import stripe
 import tweepy
@@ -1331,7 +1332,11 @@ def teach(request):
                         )
                     else:
                         # Email not verified, resend verification email
-                        send_email_confirmation(request, user, signup=False)
+                        try:
+                            email_address = EmailAddress.objects.get(user=user, email=email)
+                            email_address.send_confirmation(request, signup=False)
+                        except EmailAddress.DoesNotExist:
+                            pass
                         messages.info(
                             request,
                             "An account with this email exists. Please verify your email to continue.",
@@ -1361,7 +1366,11 @@ def teach(request):
                         EmailAddress.objects.create(user=user, email=email, primary=True, verified=False)
 
                         # Send verification email via allauth
-                        send_email_confirmation(request, user, signup=True)
+                        try:
+                            email_address = EmailAddress.objects.get(user=user, email=email)
+                            email_address.send_confirmation(request, signup=True)
+                        except EmailAddress.DoesNotExist:
+                            pass
                         # Send welcome email with username, email, and temp password
                         try:
                             send_welcome_teach_course_email(request, user, temp_password)
@@ -2786,10 +2795,10 @@ def checkout_success(request):
         cart = get_or_create_cart(request)
         if cart.total == 0:
             is_free_checkout = True
-            payment_intent_id = f"free_{timezone.now().timestamp()}"
+            payment_intent_id = f"free_{uuid.uuid4().hex}"
             email = request.POST.get("email")
         else:
-            messages.error(request, "This cart requires payment invalid request.")
+            messages.error(request, "This cart requires payment.")
             return redirect("cart_view")
 
     if not payment_intent_id:
@@ -2804,6 +2813,25 @@ def checkout_success(request):
             if payment_intent.status != "succeeded":
                 messages.error(request, "Payment was not successful.")
                 return redirect("cart_view")
+
+            # Security: Validate metadata matches current session to prevent replay attacks
+            md = getattr(payment_intent, "metadata", {}) or {}
+
+            # 1. Validate Cart ID
+            if str(md.get("cart_id")) != str(cart.id):
+                messages.error(request, "Payment verification failed (Cart mismatch).")
+                return redirect("cart_view")
+
+            # 2. Validate User/Session
+            if request.user.is_authenticated:
+                if str(md.get("user_id")) != str(request.user.id):
+                    messages.error(request, "Payment verification failed (User mismatch).")
+                    return redirect("cart_view")
+            else:
+                # For guests, match session_key
+                if md.get("session_key") != request.session.session_key:
+                    messages.error(request, "Payment verification failed (Session mismatch).")
+                    return redirect("cart_view")
 
         cart = get_or_create_cart(request)
 
@@ -2873,6 +2901,7 @@ def checkout_success(request):
                         "name": request.user.get_full_name() if request.user.is_authenticated else "Guest",
                         "address": {
                             "line1": address_line1,
+                            "line2": request.POST.get("address_line2") or "",
                             "city": request.POST.get("city"),
                             "state": request.POST.get("state"),
                             "postal_code": request.POST.get("postal_code"),
@@ -2882,14 +2911,21 @@ def checkout_success(request):
             else:
                 shipping_data = getattr(payment_intent, "shipping", None)
                 if shipping_data:
-                    # Construct structured shipping address
+                    # Construct structured shipping address with unified schema
+                    shipping_name = getattr(shipping_data, "name", "") or (
+                        request.user.get_full_name() if request.user.is_authenticated else "Guest"
+                    )
+
                     shipping_address = {
-                        "line1": shipping_data.address.line1,
-                        "line2": shipping_data.address.line2 or "",
-                        "city": shipping_data.address.city,
-                        "state": shipping_data.address.state,
-                        "postal_code": shipping_data.address.postal_code,
-                        "country": shipping_data.address.country,
+                        "name": shipping_name,
+                        "address": {
+                            "line1": shipping_data.address.line1,
+                            "line2": shipping_data.address.line2 or "",
+                            "city": shipping_data.address.city,
+                            "state": shipping_data.address.state,
+                            "postal_code": shipping_data.address.postal_code,
+                            "country": shipping_data.address.country,
+                        },
                     }
 
         # Create the Order with shipping address
