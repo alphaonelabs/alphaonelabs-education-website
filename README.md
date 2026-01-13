@@ -16,6 +16,8 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 💬 Interactive discussion forums
 - 📊 Progress tracking and analytics
 - 🌟 Submit links and receive grades with feedback
+- 🎁 Referral program with milestone rewards
+- ⭐ Points and achievements system
 - 🌙 Dark mode support
 - 📱 Responsive design for all devices
 
@@ -29,6 +31,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 💰 Payment integration with Stripe
 - 📧 Email marketing capabilities
 - 🔔 Automated notifications
+- 🎁 Referral bonuses for bringing students
 
 ### Technical Features
 
@@ -204,6 +207,10 @@ poetry run pre-commit run --all-files
 - Update README.md when adding major features
 - Use docstrings for Python functions and classes
 - Comment complex logic
+
+#### Feature Documentation
+
+- [Referral and Rewards System](docs/REFERRAL_SYSTEM.md) - Complete guide to the referral program and milestone rewards
 
 ## Contributing
 

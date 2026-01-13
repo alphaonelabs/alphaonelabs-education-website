@@ -43,6 +43,8 @@ from .models import (
     Quiz,
     QuizOption,
     QuizQuestion,
+    ReferralMilestone,
+    ReferralReward,
     Review,
     SearchLog,
     Session,
@@ -889,3 +891,37 @@ class VideoRequestAdmin(admin.ModelAdmin):
     list_display = ("title", "status", "category", "requester", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "requester__username")
+
+
+@admin.register(ReferralMilestone)
+class ReferralMilestoneAdmin(admin.ModelAdmin):
+    list_display = ("title", "referral_count", "monetary_reward", "points_reward", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("title", "description")
+    ordering = ("referral_count",)
+    fieldsets = (
+        (None, {"fields": ("title", "referral_count", "description", "badge_icon")}),
+        ("Rewards", {"fields": ("monetary_reward", "points_reward")}),
+        ("Status", {"fields": ("is_active",)}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(ReferralReward)
+class ReferralRewardAdmin(admin.ModelAdmin):
+    list_display = ("user", "milestone", "monetary_amount", "points_amount", "earned_at", "is_claimed")
+    list_filter = ("is_claimed", "earned_at", "milestone")
+    search_fields = ("user__username", "user__email", "milestone__title")
+    raw_id_fields = ("user", "milestone")
+    readonly_fields = ("earned_at",)
+    date_hierarchy = "earned_at"
+    fieldsets = (
+        (None, {"fields": ("user", "milestone")}),
+        ("Rewards", {"fields": ("monetary_amount", "points_amount", "is_claimed")}),
+        ("Timestamps", {"fields": ("earned_at",), "classes": ("collapse",)}),
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("user", "milestone")
