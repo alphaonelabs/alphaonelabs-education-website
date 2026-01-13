@@ -3,6 +3,12 @@
 {% block title %}
   Sales Analytics - {{ user.get_full_name|default:user.username }}
 {% endblock title %}
+{% block meta_description %}
+  View comprehensive sales analytics and insights for your Alpha One Labs courses and products. Track revenue, orders, conversion rates, and best-selling items.
+{% endblock meta_description %}
+{% block og_title %}
+  Sales Analytics Dashboard
+{% endblock og_title %}
 {% block extra_head %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>

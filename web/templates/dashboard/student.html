@@ -3,6 +3,12 @@
 {% block title %}
   Student Dashboard - {{ user.get_full_name|default:user.username }}
 {% endblock title %}
+{% block meta_description %}
+  Your student dashboard at Alpha One Labs. Access your enrolled courses, track progress, view achievements, and manage your learning journey.
+{% endblock meta_description %}
+{% block og_title %}
+  Student Dashboard - Alpha One Labs
+{% endblock og_title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-8">
