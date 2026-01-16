@@ -50,6 +50,42 @@
           display: none;
           /* Chrome, Safari and Opera */
       }
+
+      /* Show scrollbar when table overflows */
+      .scrollbar-show {
+          -ms-overflow-style: auto;
+          scrollbar-width: auto;
+      }
+
+      .scrollbar-show::-webkit-scrollbar {
+          display: block;
+          height: 8px;
+      }
+
+      .scrollbar-show::-webkit-scrollbar-track {
+          background: #f1f5f9;
+      }
+
+      .dark .scrollbar-show::-webkit-scrollbar-track {
+          background: #1f2937;
+      }
+
+      .scrollbar-show::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+      }
+
+      .dark .scrollbar-show::-webkit-scrollbar-thumb {
+          background: #6b7280;
+      }
+
+      .scrollbar-show::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+      }
+
+      .dark .scrollbar-show::-webkit-scrollbar-thumb:hover {
+          background: #4b5563;
+      }
   </style>
 {% endblock extra_head %}
 {% block content %}
@@ -804,7 +840,13 @@
                       </div>
                       {% if course.enrollments.exists %}
                         <div class="relative overflow-hidden">
-                          <div class="overflow-x-auto scrollbar-hide">
+                          <span id="table-scroll-hint" class="sr-only">Use arrow keys to scroll horizontally through the table</span>
+                          <div class="overflow-x-auto scrollbar-hide"
+                               id="student-table-scroll"
+                               tabindex="0"
+                               role="region"
+                               aria-label="Student enrollment table"
+                               aria-describedby="table-scroll-hint">
                             <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                               <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -1710,6 +1752,26 @@
           var fullTweet = tweetText + discountUrl;
           var tweetIntentUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(fullTweet);
           window.open(tweetIntentUrl, 'Share on Twitter', 'width=600,height=400');
+      });
+  </script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const tableScroll = document.getElementById('student-table-scroll');
+          if (!tableScroll) return;
+
+          function checkTableOverflow() {
+              const hasOverflow = tableScroll.scrollWidth > tableScroll.clientWidth;
+              if (hasOverflow) {
+                  tableScroll.classList.remove('scrollbar-hide');
+                  tableScroll.classList.add('scrollbar-show');
+              } else {
+                  tableScroll.classList.add('scrollbar-hide');
+                  tableScroll.classList.remove('scrollbar-show');
+              }
+          }
+
+          checkTableOverflow();
+          window.addEventListener('resize', checkTableOverflow);
       });
   </script>
 {% endblock content %}
