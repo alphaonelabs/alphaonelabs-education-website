@@ -6001,6 +6001,22 @@ def upload_educational_video(request):
     return render(request, "videos/upload.html", {"form": form})
 
 
+def play_youtube_video(request: HttpRequest, video_id: str) -> HttpResponse:
+    # Display a YouTube video in the internal player page.
+
+    video = EducationalVideo.objects.filter(video_id=video_id).first()
+
+    if not video:
+        messages.error(request, "The requested video could not be found.")
+        return redirect("educational_videos_list")
+
+    context = {
+        "video": video,
+    }
+
+    return render(request, "videos/play_youtube_video.html", context)
+
+
 def certificate_detail(request, certificate_id):
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     if request.user != certificate.user and not request.user.is_staff:
