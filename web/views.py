@@ -826,12 +826,8 @@ def course_detail(request, slug):
     # Get the calendar for current month
     cal = calendar.monthcalendar(current_month.year, current_month.month)
 
-    # Get all session dates for this course in current month
-    session_dates = set(
-        session.start_time.date()
-        for session in sessions
-        if session.start_time.year == current_month.year and session.start_time.month == current_month.month
-    )
+    # Get all session dates for this course
+    session_dates = set(session.start_time.date() for session in sessions)
 
     # Prepare calendar weeks data
     calendar_weeks = []
@@ -1732,29 +1728,57 @@ def update_course(request, slug):
 
 @login_required
 def mark_session_attendance(request, session_id):
-    session = Session.objects.get(id=session_id)
+    session = get_object_or_404(Session, id=session_id)
     if request.user != session.course.teacher:
         messages.error(request, "Only the course teacher can mark attendance!")
         return redirect("course_detail", slug=session.course.slug)
 
     if request.method == "POST":
-        for student_id, status in request.POST.items():
-            if student_id.startswith("student_"):
-                student_id = student_id.replace("student_", "")
+        # Process verified attendance
+        for key, value in request.POST.items():
+            if key.startswith("student_"):
+                student_id = key.replace("student_", "")
                 student = User.objects.get(id=student_id)
+
+                # Get the status from the form
+                status = value
+
+                # Update the attendance record
                 attendance, created = SessionAttendance.objects.update_or_create(
-                    session=session, student=student, defaults={"status": status}
+                    session=session,
+                    student=student,
+                    defaults={
+                        "status": status,
+                        "verified_by_teacher": status in ["present", "late", "excused"],
+                    },
                 )
+
         messages.success(request, "Attendance marked successfully!")
         return redirect("course_detail", slug=session.course.slug)
 
+    # Get all approved enrollments for this course
     enrollments = session.course.enrollments.filter(status="approved")
-    attendances = {att.student_id: att.status for att in session.attendances.all()}
+
+    # Get existing attendance records
+    attendances = {att.student_id: att for att in session.attendances.all()}
+
+    # Prepare context with students and their attendance status
+    students_data = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        attendance = attendances.get(student.id)
+
+        students_data.append(
+            {
+                "student": student,
+                "attendance": attendance,
+                "is_pending": attendance.status == "pending" if attendance else False,
+            }
+        )
 
     context = {
         "session": session,
-        "enrollments": enrollments,
-        "attendances": attendances,
+        "students_data": students_data,
     }
     return render(request, "courses/mark_attendance.html", context)
 
@@ -3247,14 +3271,14 @@ def get_course_calendar(request, slug):
 
     # Get previous and next month for navigation
     if month == 1:
-        prev_month = {"year": year - 1, "month": 12}
+        prev_month = current_month.replace(year=current_month.year - 1, month=12)
     else:
-        prev_month = {"year": year, "month": month - 1}
+        prev_month = current_month.replace(month=current_month.month - 1)
 
     if month == 12:
-        next_month = {"year": year + 1, "month": 1}
+        next_month = current_month.replace(year=current_month.year + 1, month=1)
     else:
-        next_month = {"year": year, "month": month + 1}
+        next_month = current_month.replace(month=current_month.month + 1)
 
     # Get sessions for the current month
     month_sessions = course.sessions.filter(start_time__year=year, start_time__month=month).order_by("start_time")
@@ -7739,6 +7763,65 @@ def all_study_groups(request):
 
 
 @login_required
+def self_report_attendance(request: HttpRequest, session_id: int) -> HttpResponse:
+    """Allow students to self-report attendance for a session."""
+    session = get_object_or_404(Session, id=session_id)
+
+    # Check if the student is enrolled in the course
+    _ = get_object_or_404(Enrollment, student=request.user, course=session.course, status="approved")
+
+    # Check if the session is in the past or ongoing
+    now = timezone.now()
+    if session.start_time > now:
+        messages.error(request, "You cannot report attendance for a future session!")
+        return redirect("course_detail", slug=session.course.slug)
+
+    # Check if student has already reported attendance
+    existing_attendance = SessionAttendance.objects.filter(session=session, student=request.user).first()
+
+    if existing_attendance and existing_attendance.status == "pending":
+        messages.info(
+            request, "You have already reported attendance for this session. It is pending teacher verification."
+        ),
+        return redirect("course_detail", slug=session.course.slug)
+    if existing_attendance and existing_attendance.status in ["present", "late", "excused"]:
+        messages.success(request, "Your attendance for this session has already been verified.")
+        return redirect("course_detail", slug=session.course.slug)
+
+    # Create or update attendance record as pending
+    attendance, created = SessionAttendance.objects.update_or_create(
+        session=session,
+        student=request.user,
+        defaults={"status": "pending", "self_reported": True, "verified_by_teacher": False},
+    )
+
+    # Notify the teacher about the pending attendance
+    if session.course.teacher.email:
+        subject = f"Pending Attendance Verification - {session.title}"
+        message = (
+            f"{request.user.get_full_name() or request.user.username} has self-reported attendance for "
+            f"'{session.title}' on {session.start_time.strftime('%Y-%m-%d')} and is pending your verification.\n\n"
+            "You can verify this attendance at: "
+            f"{request.build_absolute_uri(reverse('mark_session_attendance', args=[session.id]))}"
+        )
+
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [session.course.teacher.email],
+                fail_silently=True,
+            )
+        except Exception:
+            logger.exception("Failed to send attendance notification email")
+    else:
+        logger.warning(f"No email found for teacher of session {session.id}, skipping attendance notification")
+
+    messages.success(request, "Your attendance has been recorded and is pending teacher verification.")
+    return redirect("course_detail", slug=session.course.slug)
+
+
 def membership_checkout(request, plan_id: int) -> HttpResponse:
     """Display the membership checkout page."""
     plan = get_object_or_404(MembershipPlan, id=plan_id)
