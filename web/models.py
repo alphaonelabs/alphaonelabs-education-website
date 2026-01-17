@@ -1035,6 +1035,68 @@ class StudyGroupInvite(models.Model):
         self.save()
 
 
+class Meetup(models.Model):
+    """Virtual and in-person meetup/webinar model."""
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
+    description = models.TextField()
+    date = models.DateTimeField()
+    link = models.URLField(blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    event_type = models.CharField(
+        choices=[("online", "Online"), ("in_person", "In Person")],
+        default="online",
+        max_length=10,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_meetups")
+
+    def clean(self):
+        super().clean()
+        # Validate that link is provided for online meetups
+        if self.event_type == "online" and not self.link:
+            raise ValidationError({"link": "Online meetups require a meeting link"})
+        # Validate that location is provided for in-person meetups
+        if self.event_type == "in_person" and not self.location:
+            raise ValidationError({"location": "In-person meetups require a location"})
+        # Validate that the date is in the future
+        if self.date and self.date < timezone.now():
+            raise ValidationError({"date": "Meetup date must be in the future"})
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Call full_clean to enforce validation
+        if not self.slug:
+            self.slug = slugify(self.title)
+            if Meetup.objects.filter(slug=self.slug).exists():
+                suffix = uuid.uuid4().hex[:6]
+                self.slug = f"{self.slug}-{suffix}"
+        super().save(*args, **kwargs)
+
+    def can_edit(self, user):
+        """Check if the given user can edit this meetup."""
+        return user == self.creator or user.is_staff
+
+
+class MeetupRegistration(models.Model):
+    """Registration for meetups."""
+
+    meetup = models.ForeignKey(Meetup, on_delete=models.CASCADE, related_name="registrations")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="meetup_registrations")
+    registered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["user", "meetup"]
+        ordering = ["-registered_at"]
+
+    def __str__(self):
+        return f"{self.user.username} registered for {self.meetup.title}"
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """Create a Profile instance when a new User is created."""
