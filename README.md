@@ -198,8 +198,6 @@ poetry run pre-commit run --hook-stage commit
 poetry run pre-commit run --all-files
 ```
 
-See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
-
 ### Documentation
 
 - Document all new features and API endpoints
