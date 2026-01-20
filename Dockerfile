@@ -4,13 +4,19 @@ FROM python:3.10-slim@sha256:f9fd9a142c9e3bc54d906053b756eb7e7e386ee1cf784d82c25
 # Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies including MySQL development packages
 RUN apt-get update && apt-get install -y \
     curl \
+    pkg-config \
+    default-libmysqlclient-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only dependency manifests first (better layer caching)
 COPY pyproject.toml poetry.lock* ./
+
+# Copy the web module (required by Poetry for project installation)
+COPY web/ ./web/
 
 # Install Poetry and project dependencies (system deps minimal here; app build image)
 RUN python -m pip install --upgrade pip wheel setuptools && \
@@ -18,7 +24,7 @@ RUN python -m pip install --upgrade pip wheel setuptools && \
     poetry config virtualenvs.create false --local || true && \
     poetry install --only main --no-interaction --no-ansi
 
-# Copy project files
+# Copy remaining project files
 COPY . .
 
 # Create necessary directories for static files
