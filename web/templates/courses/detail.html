@@ -803,9 +803,16 @@
                         {% endif %}
                       </div>
                       {% if course.enrollments.exists %}
-                        <div class="relative overflow-hidden">
-                          <div class="overflow-x-auto scrollbar-hide">
-                            <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+                        <div class="relative overflow-hidden"
+                             x-data="{ hasOverflow: false, showGradient: false, updateOverflow() { const el = this.$refs.studentTableScroll; if (!el) return; this.hasOverflow = el.scrollWidth > el.clientWidth + 1; const maxScroll = el.scrollWidth - el.clientWidth - 1; this.showGradient = this.hasOverflow && el.scrollLeft < maxScroll; } }"
+                             x-init="updateOverflow(); window.addEventListener('resize', updateOverflow)">
+                          <div x-ref="studentTableScroll"
+                               class="overflow-x-auto scrollbar-hide"
+                               role="region"
+                               aria-label="Student enrollment table"
+                               x-on:scroll="updateOverflow">
+                            <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed"
+                                   aria-label="Student enrollment information including enrollment dates, progress, attendance, and status">
                               <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
                                   <th scope="col"
@@ -942,6 +949,13 @@
                                 {% endfor %}
                               </tbody>
                             </table>
+                          </div>
+                          <div x-show="showGradient"
+                               x-transition.opacity
+                               class="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-white via-white/60 to-transparent dark:from-gray-800 dark:via-gray-800/60"
+                               aria-hidden="true"></div>
+                          <div id="table-scroll-hint" class="sr-only">
+                            This table is scrollable horizontally. Use arrow keys or swipe to view additional columns on smaller screens.
                           </div>
                         </div>
                       {% else %}
