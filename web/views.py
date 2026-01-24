@@ -8122,9 +8122,16 @@ def users_list(request: HttpRequest) -> HttpResponse:
             Course.objects.filter(teacher_id__in=teacher_user_ids)
             .values("teacher_id")
             .annotate(
-                total_courses=Count("id"),
-                total_students=Count("enrollments", filter=Q(enrollments__status="approved")),
-                avg_rating=Avg("reviews__rating", filter=Q(reviews__rating__gt=0)),
+                total_courses=Count("id", distinct=True),
+                total_students=Count(
+                    "enrollments",
+                    filter=Q(enrollments__status="approved"),
+                    distinct=True,
+                ),
+                avg_rating=Avg(
+                    "reviews__rating",
+                    filter=Q(reviews__rating__gt=0),
+                ),
             )
         )
         # Create lookup dictionary for O(1) access
@@ -8168,14 +8175,15 @@ def users_list(request: HttpRequest) -> HttpResponse:
         for student_id, enrollments in student_enrollments.items():
             total_progress = 0
             progress_count = 0
+
             for enrollment in enrollments:
                 # Treat missing progress as 0% - NO DB WRITES in GET request
                 try:
                     total_progress += enrollment.progress.completion_percentage
-                    progress_count += 1
                 except CourseProgress.DoesNotExist:
-                    # Missing progress = 0%, don't create it here
-                    pass
+                    total_progress += 0  # explicit for clarity
+                progress_count += 1  # count ALL enrollments
+
             if student_id in student_stats_lookup:
                 student_stats_lookup[student_id]["avg_progress"] = (
                     round(total_progress / progress_count) if progress_count > 0 else 0
