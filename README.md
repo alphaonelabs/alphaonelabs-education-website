@@ -215,7 +215,8 @@ If you encounter any issues or need support, please:
 
 1. Search existing [Issues](https://github.com/alphaonelabs/education-website/issues)
 2. Create a new issue if your problem persists
-3. Join us on Slack https://join.slack.com/t/alphaonelabs/shared_invite/zt-7dvtocfr-1dYWOL0XZwEEPUeWXxrB1A
+3. ⚠️ The Slack invite link may be expired.  
+   Please contact the maintainers or open an issue to request access.
 
 ## Acknowledgments
 
