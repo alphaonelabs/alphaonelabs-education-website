@@ -126,7 +126,7 @@
         let plot = null // to store the chart instnace (functionPlot return a chart instance)
 
         function drawCanvasAndFunctions() {
-            
+
             let visableFunctions = equations.filter(eq => eq.visible)
 
             plot = functionPlot({
@@ -146,7 +146,7 @@
         }
 
 
-      window.addEventListener('load', drawCanvasAndFunctions); 
+      window.addEventListener('load', drawCanvasAndFunctions);
       window.addEventListener('resize', drawCanvasAndFunctions);
 
 
@@ -154,7 +154,7 @@
             const errorText = document.getElementById('errorText');
             errorText.textContent = message;
             errorText.classList.remove('hidden');
-            
+
             setTimeout(function() {
                 errorText.classList.add('hidden');
             }, 3000);
@@ -186,13 +186,13 @@
         function addEquation() {
             const eqInput = document.getElementById('equationInput');
             let equation = eqInput.value.trim();
-            
+
             if(!equation) {
                 showError("Please enter a function!");
                 eqInput.value = '';
                 return;
             }
-            
+
             if(!isValidEquation(equation)) {
                 showError("Invalid function!");
                 eqInput.value = '';
@@ -268,7 +268,7 @@
       }
 
         function zoomIn() {
-            const xRange = (xDomain[1] - xDomain[0]) * 0.4; 
+            const xRange = (xDomain[1] - xDomain[0]) * 0.4;
             const yRange = (yDomain[1] - yDomain[0]) * 0.4;
             const xCenter = (xDomain[0] + xDomain[1]) / 2;
             const yCenter = (yDomain[0] + yDomain[1]) / 2;
@@ -278,7 +278,7 @@
         }
 
         function zoomOut() {
-            const xRange = (xDomain[1] - xDomain[0]) * 0.6;  
+            const xRange = (xDomain[1] - xDomain[0]) * 0.6;
             const yRange = (yDomain[1] - yDomain[0]) * 0.6;
             const xCenter = (xDomain[0] + xDomain[1]) / 2;
             const yCenter = (yDomain[0] + yDomain[1]) / 2;
@@ -329,16 +329,16 @@
                 showError("No graph to export!");
                 return;
             }
-            
+
             // Clone SVG and set background
             const svgClone = svg.cloneNode(true);
             svgClone.style.backgroundColor = '#ffffff';
-            
+
             // Convert SVG to data URL
             const svgData = new XMLSerializer().serializeToString(svgClone);
             const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
             const url = URL.createObjectURL(svgBlob);
-            
+
             // Create image and draw to canvas
             const img = new Image();
             img.onload = function() {
@@ -350,13 +350,13 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.scale(2, 2);
                 ctx.drawImage(img, 0, 0);
-                
+
                 // Download
                 const link = document.createElement('a');
                 link.download = 'graph.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
-                
+
                 URL.revokeObjectURL(url);
             };
             img.src = url;
