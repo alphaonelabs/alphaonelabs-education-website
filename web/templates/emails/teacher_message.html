@@ -44,12 +44,14 @@
         }
 
         .button-primary {
-            background-color: #2dd4bf; /* teal-300 */
+            background-color: #2dd4bf;
+            /* teal-300 */
             color: #ffffff;
         }
 
         .button-primary:hover {
-            background-color: #14b8a6; /* teal-400 */
+            background-color: #14b8a6;
+            /* teal-400 */
         }
 
         .button-secondary {
@@ -70,21 +72,17 @@
       </p>
     </div>
     <div class="message-box">{{ message|linebreaks }}</div>
-
     <div class="button-group">
       {% if inbox_url %}
-      <a href="{{ inbox_url }}" aria-label="View this message in your inbox"
-         class="button button-primary">
-         View in Inbox
-      </a>
+        <a href="{{ inbox_url }}"
+           aria-label="View this message in your inbox"
+           class="button button-primary">View in Inbox</a>
       {% endif %}
       {% if messaging_dashboard_url %}
-      <a href="{{ messaging_dashboard_url }}" aria-label="Open messaging dashboard"
-         class="button button-secondary">
-         Messaging Dashboard
-      </a>
+        <a href="{{ messaging_dashboard_url }}"
+           aria-label="Open messaging dashboard"
+           class="button button-secondary">Messaging Dashboard</a>
       {% endif %}
     </div>
-
   </body>
 </html>
