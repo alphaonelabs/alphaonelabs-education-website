@@ -118,7 +118,6 @@
         let width = container.clientWidth;
         let height = container.clientHeight;
         let showGrid = true;
-        let isDarkMode = false;
         let xDomain = [-10,10];
         let yDomain = [-10,10];
         let equations = [];
@@ -127,7 +126,7 @@
 
         function drawCanvasAndFunctions() {
 
-            let visableFunctions = equations.filter(eq => eq.visible)
+            let visibleFunctions = equations.filter(eq => eq.visible)
 
             plot = functionPlot({
                 target: `#graphCanvas`,
@@ -137,7 +136,7 @@
                 xAxis: {domain: xDomain},
                 yAxis: {domain: yDomain},
                 disableZoom: true, // use control buttons instead
-                data: visableFunctions.map(eq => ({fn:eq.text , color:eq.color, skipTip:true}))
+                data: visibleFunctions.map(eq => ({fn:eq.text , color:eq.color, skipTip:true}))
             });
         }
 
