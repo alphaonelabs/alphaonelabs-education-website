@@ -216,7 +216,7 @@ def sitemap(request):
     return render(request, "sitemap.html")
 
 
-def robotics_playground(request):
+def robotics_playground(request: HttpRequest) -> HttpResponse:
     """View for the Virtual Robotics Playground."""
     return render(request, "robotics_playground.html")
 
