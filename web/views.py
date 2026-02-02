@@ -3503,6 +3503,8 @@ def message_teacher(request, teacher_id):
                 "sender_name": sender_name,
                 "sender_email": sender_email,
                 "message": original_message,
+                "inbox_url": request.build_absolute_uri(reverse("inbox")),
+                "messaging_dashboard_url": request.build_absolute_uri(reverse("messaging_dashboard")),
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 

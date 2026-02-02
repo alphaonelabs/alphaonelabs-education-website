@@ -198,8 +198,6 @@ poetry run pre-commit run --hook-stage commit
 poetry run pre-commit run --all-files
 ```
 
-See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
-
 ### Documentation
 
 - Document all new features and API endpoints
@@ -217,7 +215,8 @@ If you encounter any issues or need support, please:
 
 1. Search existing [Issues](https://github.com/alphaonelabs/education-website/issues)
 2. Create a new issue if your problem persists
-3. Join us on Slack https://join.slack.com/t/alphaonelabs/shared_invite/zt-7dvtocfr-1dYWOL0XZwEEPUeWXxrB1A
+3. Join us on [Slack](https://join.slack.com/t/alphaonelabs/shared_invite/zt-7dvtocfr-1dYWOL0XZwEEPUeWXxrB1A)
+4. Join us on [Discord](https://discord.com/invite/m2Tesq45)
 
 ## Acknowledgments
 
