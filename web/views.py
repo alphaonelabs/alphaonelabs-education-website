@@ -943,6 +943,13 @@ def enroll_course(request, course_slug):
                 referrer.add_referral_earnings(5)
                 send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
 
+            # Check for referral milestones and award rewards
+            from web.referrals import send_milestone_reward_email
+
+            rewards_earned = referrer.check_referral_milestones()
+            for reward in rewards_earned:
+                send_milestone_reward_email(referrer.user, reward)
+
     # For free courses, create approved enrollment immediately
     if course.price == 0:
         enrollment = Enrollment.objects.create(student=request.user, course=course, status="approved")
@@ -3926,6 +3933,54 @@ def referral_leaderboard(request):
     """Display the referral leaderboard."""
     top_referrers = get_referral_stats()
     return render(request, "web/referral_leaderboard.html", {"top_referrers": top_referrers})
+
+
+@login_required
+def referral_dashboard(request):
+    """Display the user's referral dashboard with stats and rewards."""
+    from django.db.models import Q, Sum
+
+    user_profile = request.user.profile
+
+    # Get user's referrals
+    referrals = user_profile.referrals.select_related("user").all()
+
+    # Get referral stats
+    total_referrals = referrals.count()
+    total_enrollments = 0
+    for ref in referrals:
+        total_enrollments += ref.user.enrollments.filter(status="approved").count()
+
+    # Get earned rewards
+    earned_rewards = request.user.referral_rewards.select_related("milestone").order_by("-earned_at")
+
+    # Get available milestones
+    from web.models import ReferralMilestone
+
+    all_milestones = ReferralMilestone.objects.filter(is_active=True).order_by("referral_count")
+
+    # Get next milestone
+    next_milestone = user_profile.next_referral_milestone
+
+    # Calculate total points from referrals
+    total_points = Points.objects.filter(user=request.user, reason__contains="Referral").aggregate(total=Sum("amount"))[
+        "total"
+    ] or 0
+
+    context = {
+        "referrals": referrals,
+        "total_referrals": total_referrals,
+        "total_enrollments": total_enrollments,
+        "earned_rewards": earned_rewards,
+        "all_milestones": all_milestones,
+        "next_milestone": next_milestone,
+        "referral_progress": user_profile.referral_progress_percentage,
+        "referral_earnings": user_profile.referral_earnings,
+        "total_points": total_points,
+        "referral_code": user_profile.referral_code,
+    }
+
+    return render(request, "web/referral_dashboard.html", context)
 
 
 # Goods Views
