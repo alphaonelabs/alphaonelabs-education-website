@@ -724,8 +724,16 @@
                          name="title"
                          placeholder="Video title "
                          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                  <!-- Hidden description (filled by JS) -->
-                  <input type="hidden" id="video-description" name="description" value="" />
+                  <!-- description  -->
+                  <label for="video-description"
+                         class="block text-left text-sm text-gray-700 dark:text-gray-300 mb-1">
+                    Video description
+                  </label>
+                  <textarea id="video-description"
+                            name="description"
+                            rows="3"
+                            placeholder="Enter a description for the video"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"></textarea>
                   <!-- Category + submit -->
                   <div class="flex gap-2">
                     <select id="video-category"
@@ -733,7 +741,9 @@
                             required
                             class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
                       <option value="">Select a category</option>
-                      {% for subject in subjects %}<option value="{{ subject.id }}">{{ subject.name }}</option>{% endfor %}
+                      {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                      {% endfor %}
                     </select>
                     <button type="submit"
                             class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
