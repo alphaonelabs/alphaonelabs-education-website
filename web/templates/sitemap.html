@@ -6,96 +6,101 @@
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       <!-- Main Pages -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold mb-4">Main Pages</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Main Pages</h2>
         <ul class="space-y-2">
           <li>
-            <a href="{% url 'index' %}" class="text-blue-600 hover:underline">Home</a>
+            <a href="{% url 'index' %}"
+               class="text-blue-600 dark:text-blue-400 hover:underline">Home</a>
           </li>
           <li>
-            <a href="{% url 'about' %}" class="text-blue-600 hover:underline">About</a>
+            <a href="{% url 'about' %}"
+               class="text-blue-600 dark:text-blue-400 hover:underline">About</a>
           </li>
           <li>
-            <a href="{% url 'learn' %}" class="text-blue-600 hover:underline">Learn</a>
+            <a href="{% url 'learn' %}"
+               class="text-blue-600 dark:text-blue-400 hover:underline">Learn</a>
           </li>
           <li>
-            <a href="{% url 'teach' %}" class="text-blue-600 hover:underline">Teach</a>
+            <a href="{% url 'teach' %}"
+               class="text-blue-600 dark:text-blue-400 hover:underline">Teach</a>
           </li>
         </ul>
       </div>
       <!-- Course Pages -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold mb-4">Course Pages</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Course Pages</h2>
         <ul class="space-y-2">
           <li>
             <a href="{% url 'course_search' %}"
-               class="text-blue-600 hover:underline">Course Search</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Course Search</a>
           </li>
           <li>
             <a href="{% url 'create_course' %}"
-               class="text-blue-600 hover:underline">Create Course</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Create Course</a>
           </li>
         </ul>
       </div>
       <!-- User Account -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold mb-4">User Account</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account</h2>
         <ul class="space-y-2">
           <li>
             <a href="{% url 'account_login' %}"
-               class="text-blue-600 hover:underline">Login</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Login</a>
           </li>
           <li>
             <a href="{% url 'account_signup' %}"
-               class="text-blue-600 hover:underline">Signup</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Signup</a>
           </li>
           <li>
-            <a href="{% url 'profile' %}" class="text-blue-600 hover:underline">Profile</a>
+            <a href="{% url 'profile' %}"
+               class="text-blue-600 dark:text-blue-400 hover:underline">Profile</a>
           </li>
         </ul>
       </div>
       <!-- Community -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold mb-4">Community</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Community</h2>
         <ul class="space-y-2">
           <li>
             <a href="{% url 'forum_categories' %}"
-               class="text-blue-600 hover:underline">Forum</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Forum</a>
           </li>
           <li>
             <a href="{% url 'peer_connections' %}"
-               class="text-blue-600 hover:underline">Peer Connections</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Peer Connections</a>
           </li>
         </ul>
       </div>
       <!-- Teacher Tools -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold mb-4">Teacher Tools</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Teacher Tools</h2>
         <ul class="space-y-2">
           <li>
             <a href="{% url 'create_course' %}"
-               class="text-blue-600 hover:underline">Create Course</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Create Course</a>
           </li>
           <li>
-            <a href="#" class="text-blue-600 hover:underline">Course Analytics</a>
+            <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">Course Analytics</a>
           </li>
           <li>
-            <a href="#" class="text-blue-600 hover:underline">Marketing Tools</a>
+            <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">Marketing Tools</a>
           </li>
         </ul>
       </div>
       <!-- Student Tools -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold mb-4">Student Tools</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Student Tools</h2>
         <ul class="space-y-2">
           <li>
             <a href="{% url 'calendar_feed' %}"
-               class="text-blue-600 hover:underline">Calendar Feed</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">Calendar Feed</a>
           </li>
           <li>
-            <a href="#" class="text-blue-600 hover:underline">Progress Tracking</a>
+            <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">Progress Tracking</a>
           </li>
         </ul>
       </div>
     </div>
   </div>
-{% endblock %}
+{% endblock content %}

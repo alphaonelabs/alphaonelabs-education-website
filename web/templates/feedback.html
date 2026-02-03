@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Feedback - Alpha One Labs{% endblock %}
+{% block title %}
+  Feedback - Alpha One Labs
+{% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">
@@ -13,7 +15,9 @@
         <form method="post" class="space-y-6">
           {% csrf_token %}
           {% if form.non_field_errors %}
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">{{ form.non_field_errors }}</div>
+            <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded relative">
+              {{ form.non_field_errors }}
+            </div>
           {% endif %}
           <div>
             <label for="{{ form.name.id_for_label }}"
@@ -53,4 +57,4 @@
       </div>
     </div>
   </div>
-{% endblock %}
+{% endblock content %}
