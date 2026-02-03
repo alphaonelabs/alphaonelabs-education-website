@@ -635,13 +635,12 @@
 
           try {
               if (!('{{ stripe_public_key }}')) {
-                  throw new Error('Stripe public key is missing');
+                  throw new Error('Payment system configuration error');
               }
 
               stripe = Stripe('{{ stripe_public_key }}');
               form.addEventListener("submit", handleSubmit);
           } catch (error) {
-              console.error('[Fatal Error]', error);
               showMessage("Payment system initialization failed. Please try again later.");
           }
 

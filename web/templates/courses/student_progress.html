@@ -41,7 +41,6 @@
         <script src="https://js.stripe.com/v3/"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                console.log('Payment script loading...');
                 const stripe = Stripe('{{ stripe_public_key }}');
                 let elements;
 
@@ -54,7 +53,6 @@
 
                 async function initialize() {
                     try {
-                        console.log('Fetching payment intent...');
                         const response = await fetch("{% url 'create_payment_intent' slug=enrollment.course.slug %}");
 
                         if (!response.ok) {
