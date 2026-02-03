@@ -1,5 +1,6 @@
 {% load static %}
 {% load cart_tags %}
+{% load timezone_filters %}
 
 <!DOCTYPE html>
 <html lang="en" class="overflow-y-scroll">
@@ -1075,7 +1076,8 @@
           <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">
               <p>© {% now "Y" %} Alpha One Labs. All rights reserved.</p>
-              <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
+              <p class="mt-1">Last updated: {{ last_modified|localtime_format:"m/d/Y h:i a" }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500">Timezone: {% current_timezone %}</p>
             </div>
             <div class="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
               <a href="{% url 'about' %}"
@@ -1138,6 +1140,8 @@
             });
         }
     </script>
+    <!-- Timezone detector script -->
+    <script src="{% static 'js/timezone_detector.js' %}"></script>
     {% block extra_js %}
     {% endblock extra_js %}
   </body>

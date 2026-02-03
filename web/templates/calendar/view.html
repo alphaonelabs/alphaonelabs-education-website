@@ -541,7 +541,7 @@
 
       function formatDate(day) {
           const date = new Date(currentYear, currentMonth, day);
-          return date.toLocaleDateString('en-US', {
+          return date.toLocaleDateString(undefined, {
               weekday: 'short',
               month: 'short',
               day: 'numeric'
@@ -553,7 +553,7 @@
           const date = new Date();
           date.setHours(hours);
           date.setMinutes(minutes);
-          return date.toLocaleTimeString('en-US', {
+          return date.toLocaleTimeString(undefined, {
               hour: 'numeric',
               minute: '2-digit',
               hour12: true

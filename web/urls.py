@@ -6,7 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 from django.views.generic.base import RedirectView
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
+from . import admin_views, peer_challenge_views, quiz_views, timezone_views, views, views_avatar, views_whiteboard
+
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -491,6 +492,15 @@ urlpatterns += i18n_patterns(
         views.create_membership_subscription,
         name="create_membership_subscription",
     ),
+    path("membership/success/", views.membership_success, name="membership_success"),
+    path("membership/settings/", views.membership_settings, name="membership_settings"),
+    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
+    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
+    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
+    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Timezone handling
+    path("set-timezone/", timezone_views.set_timezone, name="set_timezone"),
     path(
         "membership/success/",
         views.membership_success,

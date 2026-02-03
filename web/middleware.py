@@ -1,10 +1,12 @@
 import logging
 import traceback
 
+import pytz
 import sentry_sdk
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import Resolver404, resolve
+from django.utils import timezone
 
 from .models import Course, WebRequest
 from .views import send_slack_message
@@ -141,3 +143,28 @@ class WebRequestMiddleware:
             # Report to Sentry
             sentry_sdk.capture_exception(e)
             return self.get_response(request)
+
+
+class TimeZoneMiddleware:
+    """
+    Middleware that activates the user's timezone preference for each request.
+    It either uses the timezone stored in the session or defaults to TIME_ZONE from settings.
+    """
+    def __init__(self, get_response) -> None:
+        self.get_response = get_response
+     def __call__(self, request: HttpRequest) -> HttpResponse:
+         # Try to get the timezone from the session
+         tzname = request.session.get("user_timezone")
+
+         if tzname:
+             # If found, activate this timezone for the current request
+             try:
+                 timezone.activate(pytz.timezone(tzname))
+            except (pytz.exceptions.UnknownTimeZoneError, AttributeError):
+                # If timezone is invalid, use the default
+                timezone.deactivate()
+        else:
+            # No timezone in session, use the default
+            timezone.deactivate()
+        # Process the request with the activated timezone
+        return self.get_response(request)
