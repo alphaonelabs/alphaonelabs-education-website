@@ -15,11 +15,13 @@ RUN apt-get update && apt-get install -y \
 # Copy project files first (needed for Poetry to install the project)
 COPY . .
 
+# Configure Poetry to not create virtualenvs (install to system Python)
+ENV POETRY_VIRTUALENVS_CREATE=false
+
 # Install Poetry and project dependencies
 
 RUN python -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     pip install --no-cache-dir poetry==1.8.3 && \
-    poetry config virtualenvs.create false --local || true && \
     POETRY_CACHE_DIR=/tmp/poetry-cache poetry install --only main --no-interaction --no-ansi && \
     rm -rf /tmp/poetry-cache /root/.cache/pip
 
