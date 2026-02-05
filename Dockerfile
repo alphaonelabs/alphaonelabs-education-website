@@ -7,19 +7,19 @@ WORKDIR /app
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    pkg-config \
+    default-libmysqlclient-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only dependency manifests first (better layer caching)
-COPY pyproject.toml poetry.lock* ./
+# Copy project files first (needed for Poetry to install the project)
+COPY . .
 
-# Install Poetry and project dependencies (system deps minimal here; app build image)
+# Install Poetry and project dependencies
 RUN python -m pip install --upgrade pip wheel setuptools && \
     pip install poetry==1.8.3 && \
     poetry config virtualenvs.create false --local || true && \
     poetry install --only main --no-interaction --no-ansi
-
-# Copy project files
-COPY . .
 
 # Create necessary directories for static files
 RUN mkdir -p /app/static /app/staticfiles
