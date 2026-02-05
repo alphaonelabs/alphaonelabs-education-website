@@ -16,10 +16,12 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 # Install Poetry and project dependencies
-RUN python -m pip install --upgrade pip wheel setuptools && \
-    pip install poetry==1.8.3 && \
+
+RUN python -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
+    pip install --no-cache-dir poetry==1.8.3 && \
     poetry config virtualenvs.create false --local || true && \
-    poetry install --only main --no-interaction --no-ansi
+    POETRY_CACHE_DIR=/tmp/poetry-cache poetry install --only main --no-interaction --no-ansi && \
+    rm -rf /tmp/poetry-cache /root/.cache/pip
 
 # Create necessary directories for static files
 RUN mkdir -p /app/static /app/staticfiles
