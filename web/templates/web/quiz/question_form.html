@@ -54,6 +54,11 @@
                   deleteBtn.disabled = shouldDisable;
                   deleteBtn.classList.toggle('opacity-50', shouldDisable);
                   deleteBtn.classList.toggle('cursor-not-allowed', shouldDisable);
+                  if (shouldDisable) {
+                      deleteBtn.setAttribute('title', 'At least two options are required');
+                  } else {
+                      deleteBtn.removeAttribute('title');
+                  }
               });
           }
 
@@ -300,7 +305,7 @@
                                  class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Correct</label>
                         </div>
                         <button type="button"
-                                class="delete-option-btn ml-4 text-red-600 hover:text-red-700 focus:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 dark:text-red-400 dark:hover:text-red-300 dark:focus:ring-red-500 sm:ml-6 md:ml-8"
+                                class="delete-option-btn ml-4 rounded text-red-600 hover:text-red-700 focus:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 dark:text-red-400 dark:hover:text-red-300 dark:focus:ring-red-500 sm:ml-6 md:ml-8"
                                 aria-label="Remove option">
                           <i class="fas fa-trash-alt"></i>
                         </button>
