@@ -196,6 +196,33 @@ class Avatar(models.Model):
         super().save(*args, **kwargs)
 
 
+class StripeCustomer(models.Model):
+    """Store Stripe customer information for users.
+    This model maintains the relationship between a user's Profile
+    and their Stripe customer ID to prevent duplicate customer creation.
+    """
+
+    profile = models.OneToOneField(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="stripe_customer",
+        help_text="The user profile associated with this Stripe customer",
+    )
+    stripe_customer_id = models.CharField(
+        max_length=100, unique=True, db_index=True, help_text="The unique Stripe customer ID"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Stripe Customer"
+        verbose_name_plural = "Stripe Customers"
+
+    def __str__(self) -> str:
+        """Return string representation."""
+        return f"{self.profile.user.email} - {self.stripe_customer_id}"
+
+
 class Subject(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True)

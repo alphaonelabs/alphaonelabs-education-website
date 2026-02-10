@@ -48,6 +48,7 @@ from .models import (
     Session,
     SessionAttendance,
     Storefront,
+    StripeCustomer,
     Subject,
     SuccessStory,
     UserBadge,
@@ -889,3 +890,18 @@ class VideoRequestAdmin(admin.ModelAdmin):
     list_display = ("title", "status", "category", "requester", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "requester__username")
+
+
+@admin.register(StripeCustomer)
+class StripeCustomerAdmin(admin.ModelAdmin):
+    """Admin interface for StripeCustomer model."""
+
+    list_display = ("profile", "stripe_customer_id", "created_at", "updated_at")
+    list_filter = ("created_at", "updated_at")
+    search_fields = ("profile__user__email", "stripe_customer_id")
+    readonly_fields = ("created_at", "updated_at")
+    raw_id_fields = ("profile",)
+
+    def get_queryset(self, request):
+        """Optimize queryset with select_related."""
+        return super().get_queryset(request).select_related("profile__user")

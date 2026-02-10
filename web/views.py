@@ -5533,11 +5533,13 @@ def create_donation_subscription(request: HttpRequest) -> JsonResponse:
         # Create or get customer
         customer = None
         # Try to retrieve existing customer for authenticated users
-        if request.user.is_authenticated and hasattr(request.user, "stripe_customer_id"):
-            from contextlib import suppress
-
-            with suppress(stripe.error.InvalidRequestError):
-                customer = stripe.Customer.retrieve(request.user.stripe_customer_id)
+        if request.user.is_authenticated:
+            try:
+                stripe_customer = request.user.profile.stripe_customer
+                customer = stripe.Customer.retrieve(stripe_customer.stripe_customer_id)
+            except (AttributeError, stripe.error.InvalidRequestError):
+                # StripeCustomer doesn't exist or Stripe customer is invalid
+                customer = None
         # Create new customer if needed
         if not customer:
             customer = stripe.Customer.create(
@@ -5547,8 +5549,11 @@ def create_donation_subscription(request: HttpRequest) -> JsonResponse:
                 },
             )
             if request.user.is_authenticated:
-                request.user.stripe_customer_id = customer.id
-                request.user.save()
+                from .models import StripeCustomer
+
+                StripeCustomer.objects.update_or_create(
+                    profile=request.user.profile, defaults={"stripe_customer_id": customer.id}
+                )
 
         # Create a PaymentIntent for the first payment with setup_future_usage
         payment_intent = stripe.PaymentIntent.create(
