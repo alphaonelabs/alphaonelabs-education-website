@@ -7,38 +7,35 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0063_virtualclassroom_virtualclassroomcustomization_and_more'),
+        ("web", "0063_virtualclassroom_virtualclassroomcustomization_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='StripeCustomer',
+            name="StripeCustomer",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 (
-                    'stripe_customer_id',
+                    "stripe_customer_id",
                     models.CharField(
-                        db_index=True,
-                        help_text='The unique Stripe customer ID',
-                        max_length=100,
-                        unique=True
-                    )
+                        db_index=True, help_text="The unique Stripe customer ID", max_length=100, unique=True
+                    ),
                 ),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
                 (
-                    'profile',
+                    "profile",
                     models.OneToOneField(
-                        help_text='The user profile associated with this Stripe customer',
+                        help_text="The user profile associated with this Stripe customer",
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='stripe_customer',
-                        to='web.profile'
-                    )
+                        related_name="stripe_customer",
+                        to="web.profile",
+                    ),
                 ),
             ],
             options={
-                'verbose_name': 'Stripe Customer',
-                'verbose_name_plural': 'Stripe Customers',
+                "verbose_name": "Stripe Customer",
+                "verbose_name_plural": "Stripe Customers",
             },
         ),
     ]

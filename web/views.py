@@ -161,6 +161,7 @@ from .models import (
     SessionAttendance,
     SessionEnrollment,
     Storefront,
+    StripeCustomer,
     StudyGroup,
     StudyGroupInvite,
     Subject,
@@ -5535,10 +5536,17 @@ def create_donation_subscription(request: HttpRequest) -> JsonResponse:
         # Try to retrieve existing customer for authenticated users
         if request.user.is_authenticated:
             try:
-                stripe_customer = request.user.profile.stripe_customer
+                # Ensure the user has a profile before accessing StripeCustomer
+                profile, profile_created = Profile.objects.get_or_create(
+                    user=request.user, defaults={"is_teacher": False}
+                )
+                stripe_customer = profile.stripe_customer
                 customer = stripe.Customer.retrieve(stripe_customer.stripe_customer_id)
             except (AttributeError, stripe.error.InvalidRequestError):
                 # StripeCustomer doesn't exist or Stripe customer is invalid
+                customer = None
+            except Profile.DoesNotExist:
+                # This shouldn't happen after get_or_create, but handle it gracefully
                 customer = None
         # Create new customer if needed
         if not customer:
@@ -5549,11 +5557,11 @@ def create_donation_subscription(request: HttpRequest) -> JsonResponse:
                 },
             )
             if request.user.is_authenticated:
-                from .models import StripeCustomer
-
-                StripeCustomer.objects.update_or_create(
-                    profile=request.user.profile, defaults={"stripe_customer_id": customer.id}
+                # Ensure the user has a profile before creating StripeCustomer
+                profile, profile_created = Profile.objects.get_or_create(
+                    user=request.user, defaults={"is_teacher": False}
                 )
+                StripeCustomer.objects.update_or_create(profile=profile, defaults={"stripe_customer_id": customer.id})
 
         # Create a PaymentIntent for the first payment with setup_future_usage
         payment_intent = stripe.PaymentIntent.create(
