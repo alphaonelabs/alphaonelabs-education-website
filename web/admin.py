@@ -14,8 +14,8 @@ from .models import (
     Badge,
     BlogComment,
     BlogPost,
-    Cart,
-    CartItem,
+    # Cart,  # Temporarily commented out
+    # CartItem,  # Temporarily commented out
     Challenge,
     ChallengeSubmission,
     Course,
@@ -434,30 +434,31 @@ class ReviewAdmin(admin.ModelAdmin):
     search_fields = ("student__username", "course__title", "comment")
 
 
-class CartItemInline(admin.TabularInline):
-    model = CartItem
-    extra = 0
-    readonly_fields = ("created_at", "updated_at")
-    raw_id_fields = ("course", "session")
-
-
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "session_key", "item_count", "total", "created_at")
-    list_filter = ("created_at", "updated_at")
-    search_fields = ("user__username", "user__email", "session_key")
-    readonly_fields = ("created_at", "updated_at")
-    inlines = [CartItemInline]
-    raw_id_fields = ("user",)
-
-
-@admin.register(CartItem)
-class CartItemAdmin(admin.ModelAdmin):
-    list_display = ("id", "cart", "course", "session", "price", "created_at")
-    list_filter = ("created_at", "updated_at")
-    search_fields = ("cart__user__username", "cart__user__email", "course__title", "session__title")
-    readonly_fields = ("created_at", "updated_at")
-    raw_id_fields = ("cart", "course", "session")
+# Temporarily commented out to test the @login_required fix
+# class CartItemInline(admin.TabularInline):
+#     model = CartItem
+#     extra = 0
+#     readonly_fields = ("created_at", "updated_at")
+#     raw_id_fields = ("course", "session")
+#
+#
+# @admin.register(Cart)
+# class CartAdmin(admin.ModelAdmin):
+#     list_display = ("id", "user", "session_key", "item_count", "total", "created_at")
+#     list_filter = ("created_at", "updated_at")
+#     search_fields = ("user__username", "user__email", "session_key")
+#     readonly_fields = ("created_at", "updated_at")
+#     inlines = [CartItemInline]
+#     raw_id_fields = ("user",)
+#
+#
+# @admin.register(CartItem)
+# class CartItemAdmin(admin.ModelAdmin):
+#     list_display = ("id", "cart", "course", "session", "price", "created_at")
+#     list_filter = ("created_at", "updated_at")
+#     search_fields = ("cart__user__username", "cart__user__email", "course__title", "session__title")
+#     readonly_fields = ("created_at", "updated_at")
+#     raw_id_fields = ("cart", "course", "session")
 
 
 @admin.register(SearchLog)
