@@ -1333,7 +1333,7 @@ def teach(request):
                         )
                     else:
                         # Email not verified, resend verification email
-                        send_email_confirmation(request, user, signup=False)  
+                        send_email_confirmation(request, user, signup=False)
                         messages.info(
                             request,
                             "An account with this email exists. Please verify your email to continue.",
