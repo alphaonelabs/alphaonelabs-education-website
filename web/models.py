@@ -677,6 +677,24 @@ class EducationalVideo(models.Model):
         help_text="User who uploaded the video. If null, the submission is considered anonymous.",
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    video_id = models.CharField(
+        max_length=12, unique=True, editable=False, default="", help_text="Auto-generated unique video identifier."
+    )
+
+    @property
+    def youtube_id(self) -> str | None:
+        parsed = urlparse(self.video_url)
+        host = parsed.netloc.lower()
+
+        # youtu.be/<id>
+        if host in ("youtu.be", "www.youtu.be"):
+            return parsed.path.lstrip("/")
+
+        # youtube.com/watch?v=<id>
+        if host in ("youtube.com", "www.youtube.com"):
+            return parse_qs(parsed.query).get("v", [None])[0]
+
+        return None
 
     class Meta:
         verbose_name = "Educational Video"
@@ -697,27 +715,15 @@ class EducationalVideo(models.Model):
             return f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
         return None
 
-    @property
-    def youtube_id(self):
-        """
-        Extract the YouTube video ID, whether it's a long or short URL.
-        Returns None if not a YouTube link.
-        """
-        parsed = urlparse(self.video_url)
-        host = parsed.netloc.lower()
-
-        # youtu.be/<id>
-        if host in ("youtu.be", "www.youtu.be"):
-            return parsed.path.lstrip("/")
-
-        # youtube.com/watch?v=<id>
-        if host in ("youtube.com", "www.youtube.com"):
-            try:
-                return parse_qs(parsed.query).get("v", [None])[0]
-            except Exception:
-                return None
-
-        return None
+    def save(self, *args, **kwargs):
+        if not self.video_id:
+            # Keep generating until a unique ID is found
+            while True:
+                new_id = uuid.uuid4().hex[:12]
+                if not EducationalVideo.objects.filter(video_id=new_id).exists():
+                    self.video_id = new_id
+                    break
+        super().save(*args, **kwargs)
 
 
 class Achievement(models.Model):

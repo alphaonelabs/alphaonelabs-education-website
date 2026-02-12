@@ -97,21 +97,11 @@
                       <img src="{{ video.thumbnail_url }}"
                            alt="{{ video.title }} thumbnail"
                            class="w-full h-full object-cover" />
-                      <a href="{{ video.video_url }}"
-                         target="_blank"
+                      <a href="{% url 'play_youtube_video' video.video_id %}"
+                         aria-label="Play video: {{ video.title }}"
                          class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 hover:bg-opacity-0 transition-opacity">
-                        <i class="fas fa-play text-white text-4xl"></i>
-                      </a>
-                    </div>
-                  {% elif video.thumbnail_url %}
-                    <div class="relative aspect-w-16 aspect-h-9 overflow-hidden rounded-lg shadow-sm">
-                      <img src="{{ video.thumbnail_url }}"
-                           alt="{{ video.title }} thumbnail"
-                           class="w-full h-full object-cover" />
-                      <a href="{{ video.video_url }}"
-                         target="_blank"
-                         class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 hover:bg-opacity-0 transition-opacity">
-                        <i class="fas fa-play text-white text-4xl"></i>
+                        <i class="fas fa-play text-white text-4xl" aria-hidden="true"></i>
+                        <span class="sr-only">Play video: {{ video.title }}</span>
                       </a>
                     </div>
                   {% elif 'vimeo.com' in video.video_url %}
@@ -123,8 +113,8 @@
                 <!-- Video Info -->
                 <div class="p-4">
                   <h3 class="text-lg font-semibold mb-2 line-clamp-2">
-                    <a href="{{ video.video_url }}"
-                       target="_blank"
+                    <a href="{% url 'play_youtube_video' video.video_id %}"
+                       aria-label="Play video: {{ video.title }}"
                        class="hover:text-orange-500 transition-colors">{{ video.title }}</a>
                   </h3>
                   <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
