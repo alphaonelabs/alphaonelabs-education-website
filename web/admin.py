@@ -14,8 +14,6 @@ from .models import (
     Badge,
     BlogComment,
     BlogPost,
-    # Cart,  # Temporarily commented out
-    # CartItem,  # Temporarily commented out
     Challenge,
     ChallengeSubmission,
     Course,
