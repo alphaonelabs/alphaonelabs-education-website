@@ -1166,43 +1166,42 @@ def set_user_type(sender, request, user, **kwargs):
     profile.save()
 
 
-# Temporarily commented out to test the @login_required fix
-# class Cart(models.Model):
-#     user = models.OneToOneField(
-#         settings.AUTH_USER_MODEL,
-#         on_delete=models.CASCADE,
-#         related_name="cart",
-#         null=True,
-#         blank=True,
-#     )
-#     session_key = models.CharField(max_length=40, blank=True, default="")
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-#
-#     class Meta:
-#         constraints = [
-#             models.CheckConstraint(
-#                 check=models.Q(user__isnull=False) | models.Q(session_key__gt=""),
-#                 name="cart_user_or_session_key",
-#             )
-#         ]
-#
-#     @property
-#     def item_count(self):
-#         return self.items.count()
-#
-#     @property
-#     def has_goods(self):
-#         return self.items.filter(goods__isnull=False).exists()
-#
-#     @property
-#     def total(self):
-#         return sum(item.final_price for item in self.items.all())
-#
-#     def __str__(self):
-#         if self.user:
-#             return f"Cart for {self.user.username}"
-#         return "Anonymous cart"
+class Cart(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="cart",
+        null=True,
+        blank=True,
+    )
+    session_key = models.CharField(max_length=40, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(user__isnull=False) | models.Q(session_key__gt=""),
+                name="cart_user_or_session_key",
+            )
+        ]
+
+    @property
+    def item_count(self):
+        return self.items.count()
+
+    @property
+    def has_goods(self):
+        return self.items.filter(goods__isnull=False).exists()
+
+    @property
+    def total(self):
+        return sum(item.final_price for item in self.items.all())
+
+    def __str__(self):
+        if self.user:
+            return f"Cart for {self.user.username}"
+        return "Anonymous cart"
 
 
 class Storefront(models.Model):
@@ -1323,56 +1322,55 @@ class Goods(models.Model):
         return f"{self.name} (${self.price})"
 
 
-# Temporarily commented out to test the @login_required fix
-# class CartItem(models.Model):
-#     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
-#     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="cart_items")
-#     session = models.ForeignKey(Session, on_delete=models.CASCADE, null=True, blank=True, related_name="cart_items")
-#     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, null=True, blank=True, related_name="cart_items")
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-#
-#     class Meta:
-#         unique_together = [
-#             ("cart", "course"),
-#             ("cart", "session"),
-#             ("cart", "goods"),
-#         ]
-#
-#     def clean(self):
-#         if not self.course and not self.session and not self.goods:
-#             raise ValidationError("Either a course, session, or goods must be selected")
-#         if (self.course and self.session) or (self.course and self.goods) or (self.session and self.goods):
-#             raise ValidationError("Cannot select more than one type of item")
-#
-#     def save(self, *args, **kwargs):
-#         self.full_clean()
-#         super().save(*args, **kwargs)
-#
-#     @property
-#     def price(self):
-#         if self.course:
-#             return self.course.price
-#         if self.session:
-#             return self.session.price or 0
-#         if self.goods:
-#             return self.goods.price
-#         return 0
-#
-#     @property
-#     def final_price(self):
-#         if self.goods and self.goods.discount_price:  # Check for discount
-#             return self.goods.discount_price
-#         return self.price  # Fallback to original price
-#
-#     def __str__(self):
-#         if self.course:
-#             return f"{self.course.title} in cart for {self.cart}"
-#         if self.session:
-#             return f"{self.session.title} in cart for {self.cart}"
-#         if self.goods:
-#             return f"{self.goods.name} in cart for {self.cart}"
-#         return "Unknown item in cart"
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="cart_items")
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, null=True, blank=True, related_name="cart_items")
+    goods = models.ForeignKey(Goods, on_delete=models.CASCADE, null=True, blank=True, related_name="cart_items")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [
+            ("cart", "course"),
+            ("cart", "session"),
+            ("cart", "goods"),
+        ]
+
+    def clean(self):
+        if not self.course and not self.session and not self.goods:
+            raise ValidationError("Either a course, session, or goods must be selected")
+        if (self.course and self.session) or (self.course and self.goods) or (self.session and self.goods):
+            raise ValidationError("Cannot select more than one type of item")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @property
+    def price(self):
+        if self.course:
+            return self.course.price
+        if self.session:
+            return self.session.price or 0
+        if self.goods:
+            return self.goods.price
+        return 0
+
+    @property
+    def final_price(self):
+        if self.goods and self.goods.discount_price:  # Check for discount
+            return self.goods.discount_price
+        return self.price  # Fallback to original price
+
+    def __str__(self):
+        if self.course:
+            return f"{self.course.title} in cart for {self.cart}"
+        if self.session:
+            return f"{self.session.title} in cart for {self.cart}"
+        if self.goods:
+            return f"{self.goods.name} in cart for {self.cart}"
+        return "Unknown item in cart"
 
 
 # Constants
