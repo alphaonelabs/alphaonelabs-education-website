@@ -20,7 +20,7 @@ import requests
 import stripe
 import tweepy
 from allauth.account.models import EmailAddress
-from allauth.account.utils import send_email_confirmation
+# from allauth.account.utils import send_email_confirmation  # Temporarily commented out
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
@@ -1197,6 +1197,7 @@ def waiting_rooms(request):
     return render(request, "waiting_rooms.html", context)
 
 
+@login_required
 def learn(request):
     if request.method == "POST":
         form = LearnForm(request.POST)
@@ -1331,7 +1332,7 @@ def teach(request):
                         )
                     else:
                         # Email not verified, resend verification email
-                        send_email_confirmation(request, user, signup=False)
+                        # send_email_confirmation(request, user, signup=False)  # Temporarily commented out
                         messages.info(
                             request,
                             "An account with this email exists. Please verify your email to continue.",
@@ -1361,7 +1362,7 @@ def teach(request):
                         EmailAddress.objects.create(user=user, email=email, primary=True, verified=False)
 
                         # Send verification email via allauth
-                        send_email_confirmation(request, user, signup=True)
+                        # send_email_confirmation(request, user, signup=True)  # Temporarily commented out
                         # Send welcome email with username, email, and temp password
                         try:
                             send_welcome_teach_course_email(request, user, temp_password)
