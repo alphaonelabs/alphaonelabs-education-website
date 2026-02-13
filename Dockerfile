@@ -5,20 +5,29 @@ FROM python:3.10-slim@sha256:f9fd9a142c9e3bc54d906053b756eb7e7e386ee1cf784d82c25
 WORKDIR /app
 
 # Install dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    pkg-config \
+    default-libmysqlclient-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only dependency manifests first (better layer caching)
+# Copy dependency files and minimal project structure for Poetry
 COPY pyproject.toml poetry.lock* ./
+COPY web/__init__.py web/__init__.py
 
-# Install Poetry and project dependencies (system deps minimal here; app build image)
-RUN python -m pip install --upgrade pip wheel setuptools && \
-    pip install poetry==1.8.3 && \
-    poetry config virtualenvs.create false --local || true && \
-    poetry install --only main --no-interaction --no-ansi
+# Configure Poetry to not create virtualenvs (install to system Python)
+ENV POETRY_VIRTUALENVS_CREATE=false
 
-# Copy project files
+# Install Poetry and project dependencies
+# Use --no-cache-dir to prevent pip from caching packages
+# Set POETRY_CACHE_DIR to a temporary location and clean it up after install
+RUN python -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
+    pip install --no-cache-dir poetry==1.8.3 && \
+    POETRY_CACHE_DIR=/tmp/poetry-cache poetry install --only main --no-interaction --no-ansi && \
+    rm -rf /tmp/poetry-cache /root/.cache/pip
+
+# Copy the rest of the project files
 COPY . .
 
 # Create necessary directories for static files
