@@ -13,7 +13,7 @@
       #editor {
           height: 400px;
           width: 100%;
-          border: 1px solid #ccc;
+          border-radius: 4px;
       }
   </style>
 {% endblock extra_head %}
@@ -21,16 +21,18 @@
   <div class="max-w-4xl mx-auto py-8">
     <h1 class="text-2xl font-bold mb-4">Interactive Code Editor</h1>
     <!-- Editor -->
-    <div id="editor">print("Hello, world!")</div>
+    <div id="editor" class="border border-gray-300 dark:border-gray-600"></div>
     <!-- Language selector -->
-    <div class="mt-4 mb-2">
-      <label for="language-select">Language:</label>
-      <select id="language-select" class="border px-2 py-1 rounded">
-        <option value="python" selected>Python</option>
-        <option value="javascript">JavaScript</option>
-        <option value="c">C</option>
-        <option value="cpp">C++</option>
-      </select>
+    <div class="mt-4 mb-2 flex items-center gap-4">
+      <div>
+        <label for="language-select" class="text-sm font-medium text-gray-700 dark:text-gray-300">Language:</label>
+        <select id="language-select" class="border border-gray-300 dark:border-gray-600 px-2 py-1 rounded bg-white dark:bg-gray-700 dark:text-gray-300">
+          <option value="python" selected>Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="c">C</option>
+          <option value="cpp">C++</option>
+        </select>
+      </div>
     </div>
     <!-- stdin input -->
     <div class="mt-2">
@@ -42,12 +44,14 @@
     </div>
     <!-- Run button -->
     <div class="mt-3">
-      <button id="run-btn" class="px-4 py-2 bg-blue-600 text-white rounded">Run Code</button>
+      <button id="run-btn"
+              class="px-6 py-2 bg-blue-600 hover:bg-blue-400 text-white rounded-lg transition duration-200">Run Code</button>
     </div>
     <!-- Output -->
     <div class="mt-4">
       <h2 class="font-semibold mb-1">Output:</h2>
-      <pre id="output" class="bg-gray-100 p-4 rounded whitespace-pre-wrap"></pre>
+      <pre id="output"
+           class="bg-gray-100 dark:bg-gray-700 dark:text-gray-300 p-4 rounded whitespace-pre-wrap font-mono text-sm"></pre>
     </div>
   </div>
 {% endblock virtual_lab_content %}
