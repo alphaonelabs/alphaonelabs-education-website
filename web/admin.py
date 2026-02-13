@@ -439,11 +439,8 @@ class CartItemInline(admin.TabularInline):
     extra = 0
     readonly_fields = ("created_at", "updated_at")
     raw_id_fields = ("course", "session")
-<<<<<<< HEAD
-=======
 
 
->>>>>>> 4d1d6d338a91e0d271db23efa618ef8301624cb9
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "session_key", "item_count", "total", "created_at")
