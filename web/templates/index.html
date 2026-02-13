@@ -1018,12 +1018,15 @@
                       return;
                   }
 
+                  // Detect and validate locale prefix once
+                  const knownLocales = ['en', 'es', 'fr', 'de', 'pt', 'ru', 'ja', 'zh'];
+                  const localeSegment = window.location.pathname.split('/')[1];
+                  const basePrefix = knownLocales.includes(localeSegment) ? `/${localeSegment}` : '';
+
                   // Top Contributors - Simplified for sidebar
                   topContributors.forEach((contributor, index) => {
                       const div = document.createElement('div');
                       div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
-                      const localeSegment = window.location.pathname.split('/')[1];
-                      const basePrefix = localeSegment ? `/${localeSegment}` : '';
 
                       let rankBadgeInner = '';
                       if (index === 0) {
