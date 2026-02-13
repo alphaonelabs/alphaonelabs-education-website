@@ -13,18 +13,7 @@
       #editor {
           height: 400px;
           width: 100%;
-          border: 1px solid #ccc;
           border-radius: 4px;
-      }
-
-      .language-info {
-          color: #666;
-          font-size: 0.9em;
-          margin-top: 4px;
-      }
-
-      select {
-          background-color: white;
       }
   </style>
 {% endblock extra_head %}
@@ -32,7 +21,7 @@
   <div class="max-w-4xl mx-auto py-8">
     <h1 class="text-2xl font-bold mb-4">Interactive Code Editor</h1>
     <!-- Editor -->
-    <div id="editor"></div>
+    <div id="editor" class="border border-gray-300 dark:border-gray-600"></div>
     <!-- Language selector -->
     <div class="mt-4 mb-2 flex items-center gap-4">
       <div>
