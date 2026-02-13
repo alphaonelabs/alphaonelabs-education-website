@@ -59,7 +59,7 @@ function updateEditorMode(language) {
 }
 
 function setBoilerplate(language) {
-  editor.setValue(BOILERPLATES[language] || BOILERPLATES.python, -1);
+  editor.setValue(BOILERPLATES[language] || '', -1);
   editor.clearSelection();
   editor.focus();
 }
@@ -67,6 +67,13 @@ function setBoilerplate(language) {
 // Language change handler
 langSel.addEventListener("change", (e) => {
   const language = e.target.value;
+
+  // Asking user if they want to replace current code with boilerplate:
+  if (editor.getValue().trim() &&
+    !confirm(`Switch to ${language}? This will replace your current code with a '${language}' boilerplate template.`)) {
+    e.target.value = e.target.dataset.lastValue || 'python';
+    return;
+  }
 
   updateEditorMode(language);
 
