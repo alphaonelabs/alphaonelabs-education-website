@@ -21,3 +21,11 @@ def invitation_notifications(request):
         pending_invites = request.user.received_group_invites.filter(status="pending").count()
         return {"pending_invites_count": pending_invites}
     return {}
+
+
+def available_locales(request):
+    """Expose available locales from Django settings to the template as JSON."""
+    import json
+
+    locales = [lang_code for lang_code, _ in settings.LANGUAGES]
+    return {"available_locales": json.dumps(locales)}

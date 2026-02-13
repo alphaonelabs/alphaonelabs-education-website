@@ -1019,7 +1019,7 @@
                   }
 
                   // Detect and validate locale prefix once
-                  const knownLocales = ['en', 'es', 'fr', 'de', 'pt', 'ru', 'ja', 'zh'];
+                  const knownLocales = JSON.parse('{{ available_locales|escapejs }}');
                   const localeSegment = window.location.pathname.split('/')[1];
                   const basePrefix = knownLocales.includes(localeSegment) ? `/${localeSegment}` : '';
 
