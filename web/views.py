@@ -1569,6 +1569,14 @@ def course_search(request):
             # Create a set of titles
             user_courses = {course.course.title for course in enrollments}
 
+    # Get dynamic subject choices from courses that are published
+    available_subjects = (
+        Subject.objects.filter(courses__status="published")
+        .distinct()
+        .order_by("order", "name")
+        .values_list("slug", "name")
+    )
+
     context = {
         "page_obj": page_obj,
         "query": query,
@@ -1577,7 +1585,7 @@ def course_search(request):
         "min_price": min_price,
         "max_price": max_price,
         "sort_by": sort_by,
-        "subject_choices": Course._meta.get_field("subject").choices,
+        "subject_choices": list(available_subjects),
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
         "is_teacher": is_teacher,
