@@ -6,8 +6,12 @@
 {% block content %}
   <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4">Advanced Whiteboard</h1>
-    <!-- TOAST notification container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    <!-- TOAST notification container with accessibility attributes -->
+    <div id="toast-container"
+         class="fixed top-4 right-4 z-50 space-y-2"
+         aria-live="polite"
+         role="region"
+         aria-atomic="true"></div>
     <!-- Toolbar -->
     <div class="flex flex-wrap items-center gap-4 mb-4">
       <div class="flex items-center gap-2">
@@ -89,14 +93,38 @@
           const container = document.getElementById('toast-container');
           const toast = document.createElement('div');
 
-          const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+          // Set color classes based on project palette with dark mode support
+          let bgColorClass;
+          if (type === 'error') {
+              bgColorClass = 'bg-red-600 dark:bg-red-700';
+          } else if (type === 'success') {
+              bgColorClass = 'bg-green-600 dark:bg-green-700';
+          } else {
+              bgColorClass = 'bg-blue-500 dark:bg-blue-600';
+          }
 
-          toast.className = `${bgColor} text-white px-4 py-3 rounded shadow-lg transform transition-all duration-300 translate-x-0 opacity-100 flex items-center justify-between max-w-md`;
-          toast.innerHTML = `
-              <span>${message}</span>
-              <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">✕</button>
-          `;
+          toast.className = `${bgColorClass} text-white px-4 py-3 rounded shadow-lg transform transition-all duration-300 translate-x-0 opacity-100 flex items-center justify-between max-w-md`;
 
+          // Add accessibility attributes
+          toast.setAttribute('role', 'alert');
+          toast.setAttribute('aria-live', 'polite');
+          toast.setAttribute('aria-atomic', 'true');
+
+          // Create message span safely using textContent
+          const span = document.createElement('span');
+          span.textContent = message;
+
+          // Create close button safely
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = '✕';
+          closeBtn.className = 'ml-4 text-white hover:text-gray-200';
+          closeBtn.setAttribute('aria-label', 'Close notification');
+          closeBtn.addEventListener('click', () => {
+              toast.remove();
+          });
+
+          toast.appendChild(span);
+          toast.appendChild(closeBtn);
           container.appendChild(toast);
 
           setTimeout(() => {
@@ -207,21 +235,9 @@
           });
       }
 
-      // Helper function to estimate data size
-      function estimateDataSize(dataURL) {
-          // Rough estimate- base64 string length * 0.75 gives approximate byte size
-          return Math.round(dataURL.length * 0.75);
-      }
-
       function saveCanvas() {
           const data = canvas.toDataURL('image/png');
           const ts = Date.now();
-          const estimatedSize = estimateDataSize(data);
-
-          // WARN! if approaching localStorage limit (5MB)
-          if (estimatedSize > 4.5 * 1024 * 1024) { // >4.5MB
-              showToast('Warning: Canvas is very large. Consider downloading to save permanently.', 'error', 5000);
-          }
 
           try {
               const dataString = JSON.stringify({
@@ -229,8 +245,9 @@
                   data
               });
 
-              // Check if the stringified data exceeds typical localStorage limits
-              if (dataString.length > 4.5 * 1024 * 1024) { // >4.5MB
+              // Single consistent check using dataString.length
+              if (dataString.length > 4.5 * 1024 * 1024) { // >4.5MB character count
+                  showToast('Warning: Canvas is very large. Consider downloading to save permanently.', 'error', 5000);
                   throw new Error('Data exceeds localStorage size limit');
               }
 
@@ -269,8 +286,28 @@
           if (!dataURL) return;
           const img = new Image();
           img.onload = function() {
+              // Save current context state
+              const prevCompositeOp = ctx.globalCompositeOperation;
+              const prevAlpha = ctx.globalAlpha;
+              const prevStrokeStyle = ctx.strokeStyle;
+              const prevFillStyle = ctx.fillStyle;
+              const prevLineWidth = ctx.lineWidth;
+              const prevFont = ctx.font;
+
+              // Reset to default drawing state for image loading
+              ctx.globalCompositeOperation = 'source-over';
+              ctx.globalAlpha = 1.0;
+
               ctx.clearRect(0, 0, canvas.width, canvas.height);
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+              // Restore previous context state
+              ctx.globalCompositeOperation = prevCompositeOp;
+              ctx.globalAlpha = prevAlpha;
+              ctx.strokeStyle = prevStrokeStyle;
+              ctx.fillStyle = prevFillStyle;
+              ctx.lineWidth = prevLineWidth;
+              ctx.font = prevFont;
           };
           img.src = dataURL;
       }
