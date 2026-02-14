@@ -139,6 +139,55 @@ def customize_avatar(request):
 
 
 @login_required
+def upload_avatar_photo(request):
+    """AJAX endpoint for uploading avatar photo from camera capture."""
+    if request.method == "POST":
+        try:
+            avatar_file = request.FILES.get("avatar")
+            if not avatar_file:
+                return JsonResponse({"success": False, "error": "No image provided"}, status=400)
+
+            # Validate file type
+            allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+            if avatar_file.content_type not in allowed_types:
+                return JsonResponse({"success": False, "error": "Invalid image type"}, status=400)
+
+            # Validate file size (max 5MB)
+            if avatar_file.size > 5 * 1024 * 1024:
+                return JsonResponse({"success": False, "error": "Image too large (max 5MB)"}, status=400)
+
+            profile = request.user.profile
+
+            # Clear custom avatar if set (so uploaded photo takes precedence)
+            if profile.custom_avatar:
+                old_custom_avatar = profile.custom_avatar
+                profile.custom_avatar = None
+                profile.save(update_fields=["custom_avatar"])
+                # Delete the old custom avatar object
+                old_custom_avatar.delete()
+
+            # Delete old avatar image if exists
+            if profile.avatar:
+                profile.avatar.delete(save=False)
+
+            # Save new avatar
+            profile.avatar = avatar_file
+            profile.save()
+
+            # Return the new avatar URL with cache buster
+            import time
+
+            avatar_url = f"{profile.avatar.url}?t={int(time.time())}"
+
+            return JsonResponse({"success": True, "avatar_url": avatar_url})
+        except Exception as e:
+            logger.exception("Error uploading avatar photo: %s", str(e))
+            return JsonResponse({"success": False, "error": "Upload failed"}, status=500)
+
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+
+@login_required
 def preview_avatar(request):
     """AJAX endpoint for previewing avatar changes."""
     if request.method == "POST":
