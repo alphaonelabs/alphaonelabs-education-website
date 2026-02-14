@@ -281,14 +281,14 @@ const PhotoCaptureModal = (function() {
         onPhotoAccepted = callback;
         capturedBlob = null;
 
-        // Clean up existing modal if present (handles HTMX/Turbo navigation)
+        // Remove modal if present and attached
         if (modal && document.body.contains(modal)) {
             modal.remove();
             modal = null;
         }
 
-        // Create fresh modal
-        if (!modal) {
+        // Create modal if not present or not attached
+        if (!modal || !document.body.contains(modal)) {
             createModalHTML();
             initEventListeners();
         }

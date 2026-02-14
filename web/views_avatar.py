@@ -211,19 +211,19 @@ def upload_avatar_photo(request: HttpRequest) -> JsonResponse:
             profile.avatar = avatar_file
             profile.save(update_fields=["avatar"])
 
-        # Delete old files after successful commit (rollback-safe)
-        def delete_old_files():
-            if old_custom_avatar:
-                old_custom_avatar.delete(save=False)
-            if old_avatar:
-                old_avatar.delete(save=False)
+            def delete_old_files():
+                try:
+                    if old_custom_avatar:
+                        old_custom_avatar.delete()
+                    if old_avatar:
+                        old_avatar.delete(save=False)
+                except Exception as e:
+                    logger.exception("Error deleting old avatar files: %s", e)
 
-        transaction.on_commit(delete_old_files)
+            transaction.on_commit(delete_old_files)
 
-        # Return the new avatar URL with cache buster
         avatar_url = f"{profile.avatar.url}?t={int(time.time())}"
         return JsonResponse({"success": True, "avatar_url": avatar_url})
-
     except Exception:
         logger.exception("Error uploading avatar photo")
         return JsonResponse({"success": False, "error": "Upload failed"}, status=500)
