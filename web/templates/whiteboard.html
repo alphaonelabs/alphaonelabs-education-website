@@ -371,6 +371,14 @@
           ctx.stroke();
       }
 
+      window.addEventListener('beforeunload', () => {
+          if (saveScheduled) {
+              clearTimeout(saveScheduled);
+              saveScheduled = null;
+              saveCanvas();
+          }
+      });
+
       canvas.addEventListener('mousedown', (e) => {
           drawing = true;
           startX = e.offsetX;
