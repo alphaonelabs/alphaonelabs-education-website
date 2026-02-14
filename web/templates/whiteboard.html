@@ -111,12 +111,13 @@
           imageScale = parseInt(this.value, 10) / 100;
           if (uploadedImage) {
               redrawBackground();
+              scheduleSave();
           }
       });
       clearBtn.addEventListener('click', () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          localStorage.removeItem('whiteboardImage');
           uploadedImage = null;
+          saveCanvas();
       });
       uploadBtn.addEventListener('click', () => {
           loadInput.click();
@@ -134,7 +135,7 @@
                   uploadedImage = img;
                   imageScale = parseInt(imageScaleInput.value, 10) / 100;
                   redrawBackground();
-                  localStorage.setItem('whiteboardImage', dataURL);
+                  saveCanvas();
               };
           };
           reader.readAsDataURL(file);
@@ -146,7 +147,100 @@
           const newHeight = uploadedImage.height * imageScale;
           ctx.drawImage(uploadedImage, 0, 0, newWidth, newHeight);
       }
+
+      // Persistence and cross-tab sync:
+      const STORAGE_KEY = 'whiteboardData';
+      let saveScheduled = null;
+
+      function saveCanvas(immediate = false) {
+          try {
+              const data = canvas.toDataURL('image/png');
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                  ts: Date.now(),
+                  data
+              }));
+          } catch (err) {
+              console.warn('Failed to save whiteboard to localStorage', err);
+          }
+
+          if (window.BroadcastChannel) {
+              try {
+                  const channel = new BroadcastChannel('whiteboard_channel');
+                  channel.postMessage({
+                      ts: Date.now(),
+                      data: canvas.toDataURL('image/png')
+                  });
+                  channel.close();
+              } catch (e) {
+                  console.warn('BroadcastChannel error', e);
+              }
+          }
+
+          if (immediate && saveScheduled) {
+              clearTimeout(saveScheduled);
+              saveScheduled = null;
+          }
+      }
+
+      function scheduleSave(delay = 250) {
+          if (saveScheduled) return;
+          saveScheduled = setTimeout(() => {
+              saveScheduled = null;
+              saveCanvas();
+          }, delay);
+      }
+
+      function loadCanvasFromDataURL(dataURL) {
+          if (!dataURL) return;
+          const img = new Image();
+          img.onload = function() {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          };
+          img.src = dataURL;
+      }
+
+      if (window.BroadcastChannel) {
+          try {
+              const channel = new BroadcastChannel('whiteboard_channel');
+              channel.addEventListener('message', (ev) => {
+                  if (ev.data && ev.data.data) {
+                      loadCanvasFromDataURL(ev.data.data);
+                  }
+              });
+          } catch (e) {
+              console.warn('Could not open BroadcastChannel', e);
+          }
+      }
+
+      // Storage event fallback for other tabs:
+      window.addEventListener('storage', (e) => {
+          if (e.key !== STORAGE_KEY) return;
+          try {
+              const payload = JSON.parse(e.newValue || '{}');
+              if (payload && payload.data) {
+                  loadCanvasFromDataURL(payload.data);
+              }
+          } catch (err) {
+              console.warn('Failed to parse storage event payload', err);
+          }
+      });
+
       window.addEventListener('load', () => {
+          try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              if (raw) {
+                  const payload = JSON.parse(raw);
+                  if (payload && payload.data) {
+                      loadCanvasFromDataURL(payload.data);
+                      return;
+                  }
+              }
+          } catch (err) {
+              console.warn('Error loading saved whiteboard', err);
+          }
+
+          // Fallback to older single-image storage key
           const dataURL = localStorage.getItem('whiteboardImage');
           if (dataURL) {
               const img = new Image();
@@ -293,6 +387,8 @@
               ctx.globalCompositeOperation = 'source-over';
               drawArrow(startX, startY, currentX, currentY);
           }
+          // Save and sync after completing a stroke/shape
+          scheduleSave(250);
       });
 
       canvas.addEventListener('mouseleave', () => {
