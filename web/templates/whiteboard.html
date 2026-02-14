@@ -242,7 +242,6 @@
       function saveCanvas() {
           const data = canvas.toDataURL('image/png');
           const ts = Date.now();
-          let savedToStorage = false;
 
           try {
               const dataString = JSON.stringify({
@@ -255,7 +254,6 @@
                   showToast('Warning: Canvas too large for browser storage. Consider downloading your work.', 'error', 5000);
               } else {
                   localStorage.setItem(STORAGE_KEY, dataString);
-                  savedToStorage = true;
               }
           } catch (err) {
               console.warn('Failed to save whiteboard to localStorage', err);
