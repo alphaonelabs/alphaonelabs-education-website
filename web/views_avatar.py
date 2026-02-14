@@ -1,11 +1,14 @@
 import json
 import logging
+import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.http import JsonResponse
+from django.db import transaction
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import redirect, render
+from PIL import Image
 from python_avatars import (
     AccessoryType,
     Avatar,
@@ -24,6 +27,10 @@ from .forms import AvatarForm
 
 # Add logger configuration
 logger = logging.getLogger(__name__)
+
+# Constants for avatar upload validation
+MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_IMAGE_FORMATS = ["JPEG", "PNG", "GIF", "WEBP"]
 
 
 @login_required
@@ -47,9 +54,8 @@ def set_avatar_as_profile_pic(request):
                 profile.avatar.save(filename, svg_file, save=True)
 
                 messages.success(request, "Avatar set as profile picture successfully!")
-            except Exception as e:
-                # Log the detailed exception for debugging
-                logger.exception("Error setting profile picture: %s", str(e))
+            except Exception:
+                logger.exception("Error setting profile picture")
                 messages.error(request, "Error setting profile picture: An internal error occurred")
         else:
             messages.error(request, "No avatar available to set as profile picture.")
@@ -139,52 +145,62 @@ def customize_avatar(request):
 
 
 @login_required
-def upload_avatar_photo(request):
+def upload_avatar_photo(request: HttpRequest) -> JsonResponse:
     """AJAX endpoint for uploading avatar photo from camera capture."""
-    if request.method == "POST":
-        try:
-            avatar_file = request.FILES.get("avatar")
-            if not avatar_file:
-                return JsonResponse({"success": False, "error": "No image provided"}, status=400)
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
-            # Validate file type
-            allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-            if avatar_file.content_type not in allowed_types:
-                return JsonResponse({"success": False, "error": "Invalid image type"}, status=400)
+    avatar_file = request.FILES.get("avatar")
+    if not avatar_file:
+        return JsonResponse({"success": False, "error": "No image provided"}, status=400)
 
-            # Validate file size (max 5MB)
-            if avatar_file.size > 5 * 1024 * 1024:
-                return JsonResponse({"success": False, "error": "Image too large (max 5MB)"}, status=400)
+    # Validate file size first (fast check)
+    if avatar_file.size > MAX_AVATAR_SIZE:
+        return JsonResponse(
+            {"success": False, "error": f"Image too large (max {MAX_AVATAR_SIZE // (1024 * 1024)}MB)"}, status=400
+        )
 
-            profile = request.user.profile
+    # Validate file type using magic bytes (more secure than content_type)
+    try:
+        avatar_file.seek(0)
+        img = Image.open(avatar_file)
+        img.verify()  # Verify it's a valid image
+        avatar_file.seek(0)  # Reset for later use
 
+        if img.format not in ALLOWED_IMAGE_FORMATS:
+            return JsonResponse(
+                {"success": False, "error": f"Invalid image type. Allowed: {', '.join(ALLOWED_IMAGE_FORMATS)}"},
+                status=400,
+            )
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid or corrupted image file"}, status=400)
+
+    profile = request.user.profile
+
+    try:
+        with transaction.atomic():
             # Clear custom avatar if set (so uploaded photo takes precedence)
             if profile.custom_avatar:
                 old_custom_avatar = profile.custom_avatar
                 profile.custom_avatar = None
                 profile.save(update_fields=["custom_avatar"])
-                # Delete the old custom avatar object
                 old_custom_avatar.delete()
 
-            # Delete old avatar image if exists
+            # Delete old avatar image if exists to avoid orphaned files
             if profile.avatar:
                 profile.avatar.delete(save=False)
 
             # Save new avatar
             profile.avatar = avatar_file
-            profile.save()
+            profile.save(update_fields=["avatar"])
 
-            # Return the new avatar URL with cache buster
-            import time
+        # Return the new avatar URL with cache buster
+        avatar_url = f"{profile.avatar.url}?t={int(time.time())}"
+        return JsonResponse({"success": True, "avatar_url": avatar_url})
 
-            avatar_url = f"{profile.avatar.url}?t={int(time.time())}"
-
-            return JsonResponse({"success": True, "avatar_url": avatar_url})
-        except Exception as e:
-            logger.exception("Error uploading avatar photo: %s", str(e))
-            return JsonResponse({"success": False, "error": "Upload failed"}, status=500)
-
-    return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+    except Exception:
+        logger.exception("Error uploading avatar photo")
+        return JsonResponse({"success": False, "error": "Upload failed"}, status=500)
 
 
 @login_required
@@ -209,8 +225,7 @@ def preview_avatar(request):
                 clothing_color=data.get("clothing_color", "#0000FF"),
             )
             return JsonResponse({"success": True, "avatar_svg": avatar.render()})
-        except Exception as e:
-            # Log the detailed exception for debugging
-            logger.exception("Error in preview_avatar: %s", str(e))
+        except Exception:
+            logger.exception("Error in preview_avatar")
             return JsonResponse({"success": False, "error": "An internal error occurred"}, status=400)
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)

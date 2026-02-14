@@ -48,14 +48,36 @@ const CameraService = (function() {
             videoElement = video;
             video.srcObject = stream;
 
-            // Wait for video to be ready
+            // Wait for video to be ready with timeout to prevent indefinite hang
             await new Promise((resolve, reject) => {
+                const TIMEOUT_MS = 10000; // 10 seconds timeout
+                let timeoutId = null;
+
+                const cleanup = () => {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    video.onloadedmetadata = null;
+                    video.onerror = null;
+                };
+
+                timeoutId = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('Camera initialization timeout. Please try again.'));
+                }, TIMEOUT_MS);
+
                 video.onloadedmetadata = () => {
+                    cleanup();
                     video.play()
                         .then(resolve)
                         .catch(reject);
                 };
-                video.onerror = reject;
+
+                video.onerror = (err) => {
+                    cleanup();
+                    reject(err);
+                };
             });
 
             return stream;

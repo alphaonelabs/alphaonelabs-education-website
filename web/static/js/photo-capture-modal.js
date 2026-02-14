@@ -10,6 +10,7 @@ const PhotoCaptureModal = (function() {
     let onPhotoAccepted = null;
     let isClosing = false;
     let keydownHandler = null;
+    let errorTimeoutId = null;
 
     // State management
     const STATE = {
@@ -230,7 +231,7 @@ const PhotoCaptureModal = (function() {
      */
     async function open(callback) {
         if (!CameraService.isSupported()) {
-            alert('Camera is not supported on this device or requires HTTPS.');
+            console.warn('PhotoCaptureModal: Camera is not supported on this device or requires HTTPS.');
             return;
         }
 
@@ -287,6 +288,12 @@ const PhotoCaptureModal = (function() {
 
         // Stop camera first to prevent race condition
         CameraService.stop();
+
+        // Clear any pending error timeout to prevent setState on closed modal
+        if (errorTimeoutId) {
+            clearTimeout(errorTimeoutId);
+            errorTimeoutId = null;
+        }
 
         // Remove keyboard listener to prevent memory leak
         if (keydownHandler) {
@@ -360,8 +367,9 @@ const PhotoCaptureModal = (function() {
      */
     function showError(message) {
         setState(STATE.ERROR, message);
-        // Go back to captured state so user can retry
-        setTimeout(() => {
+        // Go back to captured state so user can retry (timeout is tracked and cleared on close)
+        errorTimeoutId = setTimeout(() => {
+            errorTimeoutId = null;
             if (capturedBlob) {
                 setState(STATE.CAPTURED);
             } else {
