@@ -88,7 +88,8 @@
                 </button>
               </div>
               <!-- Success message for photo capture -->
-              <div id="photo-upload-success" class="hidden mb-2 text-sm text-green-600 dark:text-green-400">
+              <div id="photo-upload-success"
+                   class="hidden mb-2 text-sm text-green-600 dark:text-green-400">
                 <i class="fas fa-check-circle mr-1"></i>
                 Photo updated successfully!
               </div>
@@ -593,10 +594,10 @@
           try {
               const formData = new FormData();
               formData.append('avatar', blob, 'avatar-photo.jpg');
-              
+
               // Get CSRF token
               const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-              
+
               // Upload to dedicated avatar endpoint
               const response = await fetch('{% url "upload_avatar_photo" %}', {
                   method: 'POST',
@@ -611,10 +612,10 @@
               if (data.success) {
                   // Success - close modal
                   PhotoCaptureModal.showSuccess();
-                  
+
                   // Show success message briefly, then reload
                   photoUploadSuccess.classList.remove('hidden');
-                  
+
                   // Reload to show updated avatar (ensures all avatar instances are updated)
                   setTimeout(() => {
                       window.location.reload();

@@ -30,7 +30,7 @@ const PhotoCaptureModal = (function() {
             <div id="photo-capture-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="photo-capture-title">
                 <!-- Backdrop -->
                 <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" id="photo-capture-backdrop"></div>
-                
+
                 <!-- Modal Content -->
                 <div class="fixed inset-0 flex items-center justify-center p-4">
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden" role="document">
@@ -39,13 +39,13 @@ const PhotoCaptureModal = (function() {
                             <h3 id="photo-capture-title" class="text-lg font-semibold text-gray-900 dark:text-white">
                                 <i class="fas fa-camera mr-2"></i>Take Photo
                             </h3>
-                            <button type="button" id="photo-capture-close" 
+                            <button type="button" id="photo-capture-close"
                                     class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                     aria-label="Close modal">
                                 <i class="fas fa-times text-xl"></i>
                             </button>
                         </div>
-                        
+
                         <!-- Body -->
                         <div class="p-4">
                             <!-- Error Message -->
@@ -53,59 +53,59 @@ const PhotoCaptureModal = (function() {
                                 <i class="fas fa-exclamation-circle mr-2"></i>
                                 <span id="photo-capture-error-text"></span>
                             </div>
-                            
+
                             <!-- Loading State -->
                             <div id="photo-capture-loading" class="text-center py-8">
                                 <i class="fas fa-spinner fa-spin text-3xl text-teal-600 dark:text-teal-400 mb-3"></i>
                                 <p class="text-gray-600 dark:text-gray-400">Initializing camera...</p>
                             </div>
-                            
+
                             <!-- Video Preview Container -->
                             <div id="photo-capture-preview-container" class="hidden">
                                 <div class="relative aspect-square bg-black rounded-lg overflow-hidden mb-4">
                                     <!-- Live Video Preview -->
-                                    <video id="photo-capture-video" 
-                                           class="w-full h-full object-cover" 
-                                           autoplay 
+                                    <video id="photo-capture-video"
+                                           class="w-full h-full object-cover"
+                                           autoplay
                                            playsinline
                                            muted></video>
-                                    
+
                                     <!-- Captured Image Preview -->
                                     <canvas id="photo-capture-canvas" class="hidden w-full h-full object-cover absolute inset-0"></canvas>
-                                    
+
                                     <!-- Capture Overlay Guide -->
                                     <div id="photo-capture-guide" class="absolute inset-0 flex items-center justify-center pointer-events-none">
                                         <div class="w-48 h-48 border-2 border-white border-dashed rounded-full opacity-50"></div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Preview State Controls -->
                                 <div id="photo-capture-preview-controls" class="flex justify-center gap-3">
-                                    <button type="button" id="photo-capture-btn" 
+                                    <button type="button" id="photo-capture-btn"
                                             class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center gap-2">
                                         <i class="fas fa-camera"></i>
                                         Capture
                                     </button>
-                                    <button type="button" id="photo-capture-cancel-btn" 
+                                    <button type="button" id="photo-capture-cancel-btn"
                                             class="px-6 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
                                         Cancel
                                     </button>
                                 </div>
-                                
+
                                 <!-- Captured State Controls -->
                                 <div id="photo-capture-captured-controls" class="hidden flex justify-center gap-3">
-                                    <button type="button" id="photo-capture-use-btn" 
+                                    <button type="button" id="photo-capture-use-btn"
                                             class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center gap-2">
                                         <i class="fas fa-check"></i>
                                         Use Photo
                                     </button>
-                                    <button type="button" id="photo-capture-retake-btn" 
+                                    <button type="button" id="photo-capture-retake-btn"
                                             class="px-6 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2">
                                         <i class="fas fa-redo"></i>
                                         Retake
                                     </button>
                                 </div>
-                                
+
                                 <!-- Uploading State -->
                                 <div id="photo-capture-uploading" class="hidden text-center py-4">
                                     <i class="fas fa-spinner fa-spin text-2xl text-teal-600 dark:text-teal-400 mb-2"></i>
@@ -122,7 +122,7 @@ const PhotoCaptureModal = (function() {
         const div = document.createElement('div');
         div.innerHTML = modalHTML;
         document.body.appendChild(div.firstElementChild);
-        
+
         modal = document.getElementById('photo-capture-modal');
     }
 
@@ -132,19 +132,19 @@ const PhotoCaptureModal = (function() {
     function initEventListeners() {
         // Close button
         document.getElementById('photo-capture-close').addEventListener('click', close);
-        
+
         // Backdrop click
         document.getElementById('photo-capture-backdrop').addEventListener('click', close);
-        
+
         // Cancel button
         document.getElementById('photo-capture-cancel-btn').addEventListener('click', close);
-        
+
         // Capture button
         document.getElementById('photo-capture-btn').addEventListener('click', capturePhoto);
-        
+
         // Use photo button
         document.getElementById('photo-capture-use-btn').addEventListener('click', usePhoto);
-        
+
         // Retake button
         document.getElementById('photo-capture-retake-btn').addEventListener('click', retakePhoto);
     }
@@ -163,7 +163,7 @@ const PhotoCaptureModal = (function() {
      */
     function setState(state, errorMessage = null) {
         currentState = state;
-        
+
         const loading = document.getElementById('photo-capture-loading');
         const previewContainer = document.getElementById('photo-capture-preview-container');
         const error = document.getElementById('photo-capture-error');
@@ -190,11 +190,11 @@ const PhotoCaptureModal = (function() {
             case STATE.INITIALIZING:
                 loading.classList.remove('hidden');
                 break;
-                
+
             case STATE.PREVIEW:
                 previewContainer.classList.remove('hidden');
                 break;
-                
+
             case STATE.CAPTURED:
                 previewContainer.classList.remove('hidden');
                 video.classList.add('hidden');
@@ -203,7 +203,7 @@ const PhotoCaptureModal = (function() {
                 previewControls.classList.add('hidden');
                 capturedControls.classList.remove('hidden');
                 break;
-                
+
             case STATE.UPLOADING:
                 previewContainer.classList.remove('hidden');
                 video.classList.add('hidden');
@@ -213,7 +213,7 @@ const PhotoCaptureModal = (function() {
                 capturedControls.classList.add('hidden');
                 uploading.classList.remove('hidden');
                 break;
-                
+
             case STATE.ERROR:
                 if (errorMessage) {
                     error.classList.remove('hidden');
@@ -261,7 +261,7 @@ const PhotoCaptureModal = (function() {
         // Show modal
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        
+
         // Focus trap - focus the close button
         document.getElementById('photo-capture-close').focus();
 
@@ -287,7 +287,7 @@ const PhotoCaptureModal = (function() {
 
         // Stop camera first to prevent race condition
         CameraService.stop();
-        
+
         // Remove keyboard listener to prevent memory leak
         if (keydownHandler) {
             document.removeEventListener('keydown', keydownHandler);
@@ -298,7 +298,7 @@ const PhotoCaptureModal = (function() {
             modal.classList.add('hidden');
             document.body.style.overflow = '';
         }
-        
+
         capturedBlob = null;
         currentState = STATE.INITIALIZING;
         isClosing = false;
@@ -310,12 +310,12 @@ const PhotoCaptureModal = (function() {
     async function capturePhoto() {
         try {
             capturedBlob = await CameraService.capture(0.8);
-            
+
             // Draw captured image to canvas for preview
             const canvas = document.getElementById('photo-capture-canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
-            
+
             img.onload = () => {
                 canvas.width = 512;
                 canvas.height = 512;
@@ -323,7 +323,7 @@ const PhotoCaptureModal = (function() {
                 URL.revokeObjectURL(img.src);
                 setState(STATE.CAPTURED);
             };
-            
+
             img.src = URL.createObjectURL(capturedBlob);
         } catch (error) {
             setState(STATE.ERROR, 'Failed to capture photo. Please try again.');

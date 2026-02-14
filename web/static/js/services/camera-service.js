@@ -14,13 +14,13 @@ const CameraService = (function() {
      */
     function isSupported() {
         // Check for secure context (HTTPS or localhost)
-        const isSecureContext = window.isSecureContext || 
-            window.location.hostname === 'localhost' || 
+        const isSecureContext = window.isSecureContext ||
+            window.location.hostname === 'localhost' ||
             window.location.hostname === '127.0.0.1';
-        
+
         // Check for getUserMedia support
         const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-        
+
         return isSecureContext && hasGetUserMedia;
     }
 
@@ -47,7 +47,7 @@ const CameraService = (function() {
 
             videoElement = video;
             video.srcObject = stream;
-            
+
             // Wait for video to be ready
             await new Promise((resolve, reject) => {
                 video.onloadedmetadata = () => {
@@ -61,7 +61,7 @@ const CameraService = (function() {
             return stream;
         } catch (error) {
             stop();
-            
+
             // Provide user-friendly error messages
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 throw new Error('Camera permission denied. Please allow camera access and try again.');
@@ -74,7 +74,7 @@ const CameraService = (function() {
             } else if (error.name === 'SecurityError') {
                 throw new Error('Camera access requires a secure connection (HTTPS).');
             }
-            
+
             throw error;
         }
     }
