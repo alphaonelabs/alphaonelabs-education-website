@@ -34,6 +34,9 @@ const CameraService = (function() {
             throw new Error('Camera not supported in this context');
         }
 
+        // Stop and release any existing stream to prevent leaks
+        stop();
+
         try {
             // Request camera with constraints optimized for avatar capture
             stream = await navigator.mediaDevices.getUserMedia({
@@ -135,10 +138,15 @@ const CameraService = (function() {
             0, 0, outputSize, outputSize   // Destination (512x512)
         );
 
-        // Convert to blob
+        // Convert to blob and cleanup canvas
         return new Promise((resolve, reject) => {
             canvas.toBlob(
                 (blob) => {
+                    // Clear canvas to release memory
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    canvas.width = 0;
+                    canvas.height = 0;
+
                     if (blob) {
                         resolve(blob);
                     } else {

@@ -11,6 +11,9 @@ const PhotoCaptureModal = (function() {
     let isClosing = false;
     let keydownHandler = null;
     let errorTimeoutId = null;
+    let beforeUnloadHandler = null;
+    let uploadRetryCount = 0;
+    const MAX_UPLOAD_RETRIES = 3;
 
     // State management
     const STATE = {
@@ -163,6 +166,8 @@ const PhotoCaptureModal = (function() {
      * Update UI based on state
      */
     function setState(state, errorMessage = null) {
+        // Capture previous state BEFORE updating for ERROR state restoration
+        const previousState = currentState;
         currentState = state;
 
         const loading = document.getElementById('photo-capture-loading');
@@ -176,37 +181,45 @@ const PhotoCaptureModal = (function() {
         const capturedControls = document.getElementById('photo-capture-captured-controls');
         const uploading = document.getElementById('photo-capture-uploading');
 
-        // Reset all states
-        loading.classList.add('hidden');
-        previewContainer.classList.add('hidden');
-        error.classList.add('hidden');
-        video.classList.remove('hidden');
-        canvas.classList.add('hidden');
-        guide.classList.remove('hidden');
-        previewControls.classList.remove('hidden');
-        capturedControls.classList.add('hidden');
-        uploading.classList.add('hidden');
-
         switch (state) {
             case STATE.INITIALIZING:
+                // Hide everything except loading
                 loading.classList.remove('hidden');
+                previewContainer.classList.add('hidden');
+                error.classList.add('hidden');
                 break;
 
             case STATE.PREVIEW:
+                // Show live video preview
+                loading.classList.add('hidden');
                 previewContainer.classList.remove('hidden');
+                error.classList.add('hidden');
+                video.classList.remove('hidden');
+                canvas.classList.add('hidden');
+                guide.classList.remove('hidden');
+                previewControls.classList.remove('hidden');
+                capturedControls.classList.add('hidden');
+                uploading.classList.add('hidden');
                 break;
 
             case STATE.CAPTURED:
+                // Show captured image
+                loading.classList.add('hidden');
                 previewContainer.classList.remove('hidden');
+                error.classList.add('hidden');
                 video.classList.add('hidden');
                 canvas.classList.remove('hidden');
                 guide.classList.add('hidden');
                 previewControls.classList.add('hidden');
                 capturedControls.classList.remove('hidden');
+                uploading.classList.add('hidden');
                 break;
 
             case STATE.UPLOADING:
+                // Show uploading state with captured image
+                loading.classList.add('hidden');
                 previewContainer.classList.remove('hidden');
+                error.classList.add('hidden');
                 video.classList.add('hidden');
                 canvas.classList.remove('hidden');
                 guide.classList.add('hidden');
@@ -216,9 +229,34 @@ const PhotoCaptureModal = (function() {
                 break;
 
             case STATE.ERROR:
+                // Show error while preserving previous UI state
                 if (errorMessage) {
                     error.classList.remove('hidden');
                     errorText.textContent = errorMessage;
+                }
+                // Restore UI based on previous state to avoid flash
+                if (previousState === STATE.CAPTURED) {
+                    video.classList.add('hidden');
+                    canvas.classList.remove('hidden');
+                    guide.classList.add('hidden');
+                    previewControls.classList.add('hidden');
+                    capturedControls.classList.remove('hidden');
+                    uploading.classList.add('hidden');
+                } else if (previousState === STATE.UPLOADING) {
+                    video.classList.add('hidden');
+                    canvas.classList.remove('hidden');
+                    guide.classList.add('hidden');
+                    previewControls.classList.add('hidden');
+                    capturedControls.classList.add('hidden');
+                    uploading.classList.remove('hidden');
+                } else {
+                    // Default to preview state
+                    video.classList.remove('hidden');
+                    canvas.classList.add('hidden');
+                    guide.classList.remove('hidden');
+                    previewControls.classList.remove('hidden');
+                    capturedControls.classList.add('hidden');
+                    uploading.classList.add('hidden');
                 }
                 previewContainer.classList.remove('hidden');
                 break;
@@ -258,6 +296,15 @@ const PhotoCaptureModal = (function() {
         // Add keyboard listener (will be removed on close)
         keydownHandler = handleKeyDown;
         document.addEventListener('keydown', keydownHandler);
+
+        // Add beforeunload handler to cleanup camera on navigation
+        beforeUnloadHandler = () => {
+            CameraService.stop();
+        };
+        window.addEventListener('beforeunload', beforeUnloadHandler);
+
+        // Reset retry counter for new session
+        uploadRetryCount = 0;
 
         // Show modal
         modal.classList.remove('hidden');
@@ -301,6 +348,12 @@ const PhotoCaptureModal = (function() {
             keydownHandler = null;
         }
 
+        // Remove beforeunload handler
+        if (beforeUnloadHandler) {
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+            beforeUnloadHandler = null;
+        }
+
         if (modal) {
             modal.classList.add('hidden');
             document.body.style.overflow = '';
@@ -308,6 +361,7 @@ const PhotoCaptureModal = (function() {
 
         capturedBlob = null;
         currentState = STATE.INITIALIZING;
+        uploadRetryCount = 0; // Reset for next session
         isClosing = false;
     }
 
@@ -329,6 +383,12 @@ const PhotoCaptureModal = (function() {
                 ctx.drawImage(img, 0, 0, 512, 512);
                 URL.revokeObjectURL(img.src);
                 setState(STATE.CAPTURED);
+            };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(img.src);
+                console.error('Failed to load captured image blob');
+                setState(STATE.ERROR, 'Failed to load captured image. Please try again.');
             };
 
             img.src = URL.createObjectURL(capturedBlob);
@@ -359,14 +419,26 @@ const PhotoCaptureModal = (function() {
      * Show success and close
      */
     function showSuccess() {
+        uploadRetryCount = 0; // Reset on success
         close();
     }
 
     /**
-     * Show error in modal
+     * Show error in modal with retry limit
      */
     function showError(message) {
-        setState(STATE.ERROR, message);
+        uploadRetryCount++;
+
+        // Check if max retries exceeded
+        if (uploadRetryCount >= MAX_UPLOAD_RETRIES) {
+            setState(STATE.ERROR, `${message} Maximum retries (${MAX_UPLOAD_RETRIES}) exceeded. Please close and try again later.`);
+            // Don't auto-recover - user must close and reopen
+            return;
+        }
+
+        const retriesLeft = MAX_UPLOAD_RETRIES - uploadRetryCount;
+        setState(STATE.ERROR, `${message} (${retriesLeft} ${retriesLeft === 1 ? 'retry' : 'retries'} left)`);
+
         // Go back to captured state so user can retry (timeout is tracked and cleared on close)
         errorTimeoutId = setTimeout(() => {
             errorTimeoutId = null;

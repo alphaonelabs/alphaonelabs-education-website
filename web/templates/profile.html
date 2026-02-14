@@ -552,9 +552,9 @@
           <li class="flex items-center justify-between">
             <div>
               <span class="font-semibold text-teal-600">{{ discount.code }}</span>
-              <span class="text-gray-600">– {{ discount.discount_percentage }}% off</span>
+              <span class="text-gray-600 dark:text-gray-300">– {{ discount.discount_percentage }}% off</span>
             </div>
-            <div class="text-sm text-gray-500">(valid until {{ discount.valid_until|date:"M j, Y" }})</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">(valid until {{ discount.valid_until|date:"M j, Y" }})</div>
           </li>
         {% endfor %}
       </ul>
@@ -613,8 +613,12 @@
               const formData = new FormData();
               formData.append('avatar', blob, 'avatar-photo.jpg');
 
-              // Get CSRF token
-              const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+              // Get CSRF token with null check
+              const csrfElement = document.querySelector('[name=csrfmiddlewaretoken]');
+              if (!csrfElement) {
+                  throw new Error('Security token not found. Please refresh the page.');
+              }
+              const csrfToken = csrfElement.value;
 
               // Upload to dedicated avatar endpoint
               const response = await fetch('{% url "upload_avatar_photo" %}', {
@@ -627,8 +631,23 @@
 
               // Check for HTTP errors before parsing JSON
               if (!response.ok) {
-                  const errText = await response.text();
-                  throw new Error(`Upload failed: ${response.status} ${errText}`);
+                  let errorMsg = `Upload failed: ${response.status}`;
+                  try {
+                      const errData = await response.json();
+                      if (errData.error) {
+                          errorMsg = errData.error;
+                      } else if (errData.message) {
+                          errorMsg = errData.message;
+                      } else if (errData.detail) {
+                          errorMsg = errData.detail;
+                      }
+                  } catch {
+                      // JSON parse failed, use generic message with status
+                      if (response.statusText) {
+                          errorMsg = `Upload failed: ${response.status} ${response.statusText}`;
+                      }
+                  }
+                  throw new Error(errorMsg);
               }
 
               const data = await response.json();

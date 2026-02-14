@@ -8,7 +8,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import redirect, render
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from python_avatars import (
     AccessoryType,
     Avatar,
@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Constants for avatar upload validation
 MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_IMAGE_DIMENSION = 4096  # Max width/height in pixels
 ALLOWED_IMAGE_FORMATS = ["JPEG", "PNG", "GIF", "WEBP"]
 
 
@@ -164,35 +165,60 @@ def upload_avatar_photo(request: HttpRequest) -> JsonResponse:
     try:
         avatar_file.seek(0)
         img = Image.open(avatar_file)
-        img.verify()  # Verify it's a valid image
-        avatar_file.seek(0)  # Reset for later use
+        image_format = img.format  # Cache format before verify
+        img.verify()  # Verify it's a valid image (makes img unusable)
 
-        if img.format not in ALLOWED_IMAGE_FORMATS:
+        if image_format not in ALLOWED_IMAGE_FORMATS:
             return JsonResponse(
                 {"success": False, "error": f"Invalid image type. Allowed: {', '.join(ALLOWED_IMAGE_FORMATS)}"},
                 status=400,
             )
-    except Exception:
+
+        # Reopen image to get dimensions (verify() leaves image unusable)
+        avatar_file.seek(0)
+        img = Image.open(avatar_file)
+
+        # Validate dimensions to prevent resource exhaustion
+        if img.width > MAX_IMAGE_DIMENSION or img.height > MAX_IMAGE_DIMENSION:
+            return JsonResponse(
+                {"success": False, "error": f"Image dimensions too large (max {MAX_IMAGE_DIMENSION}x{MAX_IMAGE_DIMENSION}px)"},
+                status=400,
+            )
+
+        avatar_file.seek(0)  # Reset for later use
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
         return JsonResponse({"success": False, "error": "Invalid or corrupted image file"}, status=400)
 
     profile = request.user.profile
 
+    # Capture old file references before modifying (for deletion after commit)
+    old_custom_avatar = profile.custom_avatar if profile.custom_avatar else None
+    old_avatar = profile.avatar if profile.avatar else None
+
     try:
         with transaction.atomic():
             # Clear custom avatar if set (so uploaded photo takes precedence)
-            if profile.custom_avatar:
-                old_custom_avatar = profile.custom_avatar
+            if old_custom_avatar:
                 profile.custom_avatar = None
                 profile.save(update_fields=["custom_avatar"])
-                old_custom_avatar.delete()
 
-            # Delete old avatar image if exists to avoid orphaned files
-            if profile.avatar:
-                profile.avatar.delete(save=False)
+            # Clear old avatar reference (file deleted after commit)
+            if old_avatar:
+                profile.avatar = None
+                profile.save(update_fields=["avatar"])
 
             # Save new avatar
             profile.avatar = avatar_file
             profile.save(update_fields=["avatar"])
+
+        # Delete old files after successful commit (rollback-safe)
+        def delete_old_files():
+            if old_custom_avatar:
+                old_custom_avatar.delete(save=False)
+            if old_avatar:
+                old_avatar.delete(save=False)
+
+        transaction.on_commit(delete_old_files)
 
         # Return the new avatar URL with cache buster
         avatar_url = f"{profile.avatar.url}?t={int(time.time())}"
