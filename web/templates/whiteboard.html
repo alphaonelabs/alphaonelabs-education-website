@@ -103,11 +103,15 @@
               bgColorClass = 'bg-blue-500 dark:bg-blue-600';
           }
 
-          toast.className = `${bgColorClass} text-white px-4 py-3 rounded shadow-lg transform transition-all duration-300 translate-x-0 opacity-100 flex items-center justify-between max-w-md`;
+          toast.className = `${bgColorClass} text-white px-4 py-3 rounded shadow-lg transform transition-all duration-300 opacity-100 translate-x-0 flex items-center justify-between max-w-md`;
 
-          // Add accessibility attributes
-          toast.setAttribute('role', 'alert');
-          toast.setAttribute('aria-live', 'polite');
+          if (type === 'error') {
+              toast.setAttribute('role', 'alert');
+              toast.setAttribute('aria-live', 'assertive');
+          } else {
+              toast.setAttribute('role', 'status');
+              toast.setAttribute('aria-live', 'polite');
+          }
           toast.setAttribute('aria-atomic', 'true');
 
           // Create message span safely using textContent
@@ -129,8 +133,8 @@
 
           setTimeout(() => {
               if (toast.parentElement) {
-                  toast.style.opacity = '0';
-                  toast.style.transform = 'translateX(100%)';
+                  toast.classList.remove('opacity-100', 'translate-x-0');
+                  toast.classList.add('opacity-0', 'translate-x-full');
                   setTimeout(() => toast.remove(), 300);
               }
           }, duration);
@@ -238,6 +242,7 @@
       function saveCanvas() {
           const data = canvas.toDataURL('image/png');
           const ts = Date.now();
+          let savedToStorage = false;
 
           try {
               const dataString = JSON.stringify({
@@ -245,16 +250,16 @@
                   data
               });
 
-              // Single consistent check using dataString.length
+              // Single consistent check using dataString.length (what localStorage actually uses)
               if (dataString.length > 4.5 * 1024 * 1024) { // >4.5MB character count
-                  showToast('Warning: Canvas is very large. Consider downloading to save permanently.', 'error', 5000);
-                  throw new Error('Data exceeds localStorage size limit');
+                  showToast('Warning: Canvas too large for browser storage. Consider downloading your work.', 'error', 5000);
+              } else {
+                  localStorage.setItem(STORAGE_KEY, dataString);
+                  savedToStorage = true;
               }
-
-              localStorage.setItem(STORAGE_KEY, dataString);
           } catch (err) {
               console.warn('Failed to save whiteboard to localStorage', err);
-              showToast('Failed to auto-save: Canvas too large for browser storage. Please download your work manually.', 'error', 8000);
+              showToast('Failed to auto-save. Please download your work manually.', 'error', 8000);
           }
 
           if (broadcastChannel) {
@@ -285,29 +290,19 @@
       function loadCanvasFromDataURL(dataURL) {
           if (!dataURL) return;
           const img = new Image();
-          img.onload = function() {
-              // Save current context state
-              const prevCompositeOp = ctx.globalCompositeOperation;
-              const prevAlpha = ctx.globalAlpha;
-              const prevStrokeStyle = ctx.strokeStyle;
-              const prevFillStyle = ctx.fillStyle;
-              const prevLineWidth = ctx.lineWidth;
-              const prevFont = ctx.font;
 
-              // Reset to default drawing state for image loading
+          img.onload = function() {
+              ctx.save();
               ctx.globalCompositeOperation = 'source-over';
               ctx.globalAlpha = 1.0;
-
               ctx.clearRect(0, 0, canvas.width, canvas.height);
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              ctx.restore();
+          };
 
-              // Restore previous context state
-              ctx.globalCompositeOperation = prevCompositeOp;
-              ctx.globalAlpha = prevAlpha;
-              ctx.strokeStyle = prevStrokeStyle;
-              ctx.fillStyle = prevFillStyle;
-              ctx.lineWidth = prevLineWidth;
-              ctx.font = prevFont;
+          img.onerror = function() {
+              console.warn('Failed to load canvas image from dataURL');
+              showToast('Failed to load canvas image', 'error', 5000);
           };
           img.src = dataURL;
       }
@@ -324,6 +319,7 @@
               }
           } catch (err) {
               console.warn('Error loading saved whiteboard', err);
+              showToast('Failed to load saved whiteboard', 'error', 5000);
           }
 
           // Fallback to older single-image storage key
@@ -335,6 +331,9 @@
                   uploadedImage = img;
                   imageScale = parseInt(imageScaleInput.value, 10) / 100;
                   redrawBackground();
+              };
+              img.onerror = function() {
+                  console.warn('Failed to load fallback image');
               };
           }
       });
