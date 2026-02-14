@@ -1018,6 +1018,11 @@
                       return;
                   }
 
+                  // Detect and validate locale prefix once
+                  const knownLocales = JSON.parse('{{ available_locales|escapejs }}');
+                  const localeSegment = window.location.pathname.split('/')[1];
+                  const basePrefix = knownLocales.includes(localeSegment) ? `/${localeSegment}` : '';
+
                   // Top Contributors - Simplified for sidebar
                   topContributors.forEach((contributor, index) => {
                       const div = document.createElement('div');
@@ -1053,8 +1058,8 @@
                               </div>
                           </div>
                           <div class="flex-1 min-w-0">
-                              <div class="flex items-center justify-between">
-                                  <a href="${window.location.pathname.split('/')[1]}/contributors/${contributor.username}/" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                <div class="flex items-center justify-between">
+                                  <a href="${basePrefix}/contributors/${contributor.username}/" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
                                      ${contributor.username || 'Unknown Contributor'}
                                   </a>
                                   <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
