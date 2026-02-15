@@ -1450,13 +1450,13 @@
   </div>
   <!-- Toast Notification -->
   <div id="notification"
-       class="notification bg-teal-500 dark:bg-teal-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3">
+       class="fixed bottom-5 right-5 z-[1000] max-w-[350px] translate-y-[30px] opacity-0 transition-all duration-300 bg-teal-500 dark:bg-teal-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3">
     <i class="fas fa-check-circle notification-icon text-xl"></i>
     <span class="notification-message font-medium">This is a notification</span>
   </div>
   <script>
       function copyToClipboard() {
-          const url = '{{ request.build_absolute_uri }}';
+          const url = '{{ request.build_absolute_uri|escapejs }}';
 
           if (navigator.clipboard && window.isSecureContext) {
               navigator.clipboard.writeText(url).then(() => {
@@ -1616,15 +1616,12 @@
 
           // Update notification content
           iconEl.className = `fas ${icon} notification-icon text-xl`;
-          notification.className = `notification ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3`;
+          notification.className = `fixed bottom-5 right-5 z-[1000] max-w-[350px] transition-all duration-300 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 translate-y-0 opacity-100`;
           messageEl.textContent = message;
-
-          // Show notification
-          notification.classList.add('show');
 
           // Hide after 3 seconds
           setTimeout(() => {
-              notification.classList.remove('show');
+              notification.className = `fixed bottom-5 right-5 z-[1000] max-w-[350px] transition-all duration-300 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 translate-y-[30px] opacity-0`;
           }, 3000);
       }
 
