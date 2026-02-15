@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Meetups and Webinars
+{% endblock title %}
+{% block content %}
+  <div class="flex justify-center items-center min-h-screen px-6 py-14">
+    <div class="max-w-3xl w-full bg-white dark:bg-gray-900 p-12 rounded-2xl shadow-2xl backdrop-blur-md">
+      <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">{{ meetup.title }}</h1>
+      <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6 text-center">{{ meetup.description }}</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-600 dark:text-gray-400 text-lg">
+        <p>
+          <span class="font-semibold text-gray-900 dark:text-white">📅 Date:</span> {{ meetup.date }}
+        </p>
+        <p>
+          <span class="font-semibold text-gray-900 dark:text-white">📌 Type:</span> {{ meetup.get_event_type_display }}
+        </p>
+        {% if meetup.event_type == 'in_person' %}
+          <p>
+            <span class="font-semibold text-gray-900 dark:text-white">📍 Location:</span> {{ meetup.location }}
+          </p>
+        {% endif %}
+        {% if meetup.event_type == 'online' %}
+          {% if user.is_authenticated and user_is_registered %}
+            <p>
+              <a href="{{ meetup.link }}"
+                 target="_blank"
+                 class="text-blue-600 dark:text-blue-400 font-medium hover:underline">🎥 Join Online Meetup</a>
+            </p>
+          {% else %}
+            <p class="text-red-600 dark:text-red-400 font-medium">🔒 Only registered users can join this online meetup.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% if user.is_authenticated and meetup.creator == user %}
+        <a href="{% url 'edit_meetup' slug=meetup.slug %}"
+           class="mt-6 inline-block text-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-6 py-3 rounded-xl shadow-md transition-all duration-300">
+          ✏️ Edit Meetup
+        </a>
+      {% endif %}
+      <p class="text-gray-600 dark:text-gray-400 mt-6 text-center">
+        <span class="font-semibold text-gray-900 dark:text-white">👤 Creator:</span> {{ meetup.creator.username }}
+      </p>
+      <div class="mt-10 flex justify-center">
+        {% if user.is_authenticated %}
+          {% if user_is_registered %}
+            <form method="post" action="{% url 'unregister_meetup' meetup.slug %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300">
+                ❌ Unregister
+              </button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'register_meetup' meetup.slug %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300">
+                ✅ Register
+              </button>
+            </form>
+          {% endif %}
+        {% else %}
+          <p class="text-gray-500 mt-6 text-center">🔒 Log in to register for this meetup.</p>
+        {% endif %}
+      </div>
+      <div class="mt-12">
+        <h2 class="text-3xl font-semibold text-gray-900 dark:text-white mb-6 text-center">🎟️ Attendees</h2>
+        <ul class="list-none space-y-3 text-gray-700 dark:text-gray-300 text-center">
+          {% for registration in registrations %}
+            <li class="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg shadow-md">{{ registration.user.username }}</li>
+          {% empty %}
+            <p class="text-gray-600 dark:text-gray-400">😞 No attendees yet.</p>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
