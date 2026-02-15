@@ -3,6 +3,12 @@
 {% block title %}
   Manage Products - {{ user.get_full_name|default:user.username }}
 {% endblock title %}
+{% block meta_description %}
+  Manage your products and inventory on Alpha One Labs marketplace. Add, edit, and track your educational products and resources.
+{% endblock meta_description %}
+{% block og_title %}
+  Manage Products - Alpha One Labs
+{% endblock og_title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
