@@ -217,8 +217,8 @@ def upload_avatar_photo(request: HttpRequest) -> JsonResponse:
                         old_custom_avatar.delete()
                     if old_avatar:
                         old_avatar.delete(save=False)
-                except Exception as e:
-                    logger.exception("Error deleting old avatar files: %s", e)
+                except Exception:
+                    logger.exception("Error deleting old avatar files")
 
             transaction.on_commit(delete_old_files)
 

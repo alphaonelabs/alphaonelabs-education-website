@@ -6,6 +6,7 @@ const PhotoCaptureModal = (function() {
     'use strict';
 
     let modal = null;
+    let focusTrapHandler = null;
     let capturedBlob = null;
     let onPhotoAccepted = null;
     let isClosing = false;
@@ -310,8 +311,41 @@ const PhotoCaptureModal = (function() {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
 
+
         // Focus trap - focus the close button
-        document.getElementById('photo-capture-close').focus();
+        const closeBtn = document.getElementById('photo-capture-close');
+        closeBtn.focus();
+
+        // Add focus trap
+        const focusableElements = modal.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+
+        focusTrapHandler = (e) => {
+            // Handle Escape (already handled by keydownHandler, but ensure it works)
+            if (e.key === 'Escape') {
+                return; // Let existing handler deal with it
+            }
+            // Handle Tab
+            if (e.key === 'Tab') {
+                if (e.shiftKey) {
+                    // Shift+Tab: if on first element, go to last
+                    if (document.activeElement === firstFocusable) {
+                        e.preventDefault();
+                        lastFocusable.focus();
+                    }
+                } else {
+                    // Tab: if on last element, go to first
+                    if (document.activeElement === lastFocusable) {
+                        e.preventDefault();
+                        firstFocusable.focus();
+                    }
+                }
+            }
+        };
+        modal.addEventListener('keydown', focusTrapHandler);
 
         setState(STATE.INITIALIZING);
 
@@ -354,6 +388,11 @@ const PhotoCaptureModal = (function() {
             beforeUnloadHandler = null;
         }
 
+
+        if (focusTrapHandler && modal) {
+            modal.removeEventListener('keydown', focusTrapHandler);
+            focusTrapHandler = null;
+        }
         if (modal) {
             modal.classList.add('hidden');
             document.body.style.overflow = '';
