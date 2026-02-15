@@ -491,6 +491,16 @@ urlpatterns += i18n_patterns(
         views.create_membership_subscription,
         name="create_membership_subscription",
     ),
+    path("membership/success/", views.membership_success, name="membership_success"),
+    path("membership/settings/", views.membership_settings, name="membership_settings"),
+    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
+    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
+    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
+    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Live Statistics APIs
+    path("api/live-stats/", views.live_stats_api, name="live_stats_api"),
+    path("api/live-activity-feed/", views.live_activity_feed_api, name="live_activity_feed_api"),
     path(
         "membership/success/",
         views.membership_success,

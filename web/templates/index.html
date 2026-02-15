@@ -23,6 +23,62 @@
         </div>
       </div>
     {% endif %}
+    <!-- Live Counters Section -->
+    <div class="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-6 mb-6 shadow-lg">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Live Students Counter -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Students Learning Now</p>
+              <h3 class="text-2xl font-bold text-teal-600 dark:text-teal-300">
+                <span id="students-learning-count">0</span>
+              </h3>
+            </div>
+            <div class="bg-teal-100 dark:bg-teal-900 rounded-full p-3">
+              <i class="fas fa-users text-teal-500 dark:text-teal-300 text-xl"></i>
+            </div>
+          </div>
+        </div>
+        <!-- Active Students Counter -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Active This Month</p>
+              <h3 class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                <span id="active-students-count">0</span>
+              </h3>
+            </div>
+            <div class="bg-orange-100 dark:bg-orange-900 rounded-full p-3">
+              <i class="fas fa-chart-line text-orange-500 dark:text-orange-300 text-xl"></i>
+            </div>
+          </div>
+        </div>
+        <!-- Quizzes Completed Today -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Quizzes Today</p>
+              <h3 class="text-2xl font-bold text-green-600 dark:text-green-400">
+                <span id="quizzes-completed-count">0</span>
+              </h3>
+            </div>
+            <div class="bg-green-100 dark:bg-green-900 rounded-full p-3">
+              <i class="fas fa-check-circle text-green-500 dark:text-green-300 text-xl"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Recent Activity Feed -->
+      <div class="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+        <h4 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
+          <i class="fas fa-bell text-teal-500 mr-2"></i>Recent Activity
+        </h4>
+        <div id="activity-feed" class="space-y-2 max-h-40 overflow-y-auto">
+          <p class="text-sm text-gray-500 dark:text-gray-400">Loading recent activity...</p>
+        </div>
+      </div>
+    </div>
     <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
       <div class="md:w-3/4 space-y-7">
         <div class="bg-white dark:bg-gray-800 border border-teal-300 dark:border-teal-400 rounded-lg shadow-lg p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1405,5 +1461,71 @@
               }
           });
       });
+
+      // Live Counters JavaScript
+      function updateLiveStats() {
+          fetch("{% url 'live_stats_api' %}")
+              .then(response => response.json())
+              .then(data => {
+                  // Animate counter updates
+                  animateCounter("students-learning-count", data.students_in_session);
+                  animateCounter("active-students-count", data.active_students);
+                  animateCounter("quizzes-completed-count", data.quizzes_completed_today);
+              })
+              .catch(error => console.error("Error fetching live stats:", error));
+      }
+
+      function updateActivityFeed() {
+          fetch("{% url 'live_activity_feed_api' %}")
+              .then(response => response.json())
+              .then(data => {
+                  const feedContainer = document.getElementById("activity-feed");
+                  if (data.events && data.events.length > 0) {
+                      feedContainer.innerHTML = data.events.map(event => `
+                          <div class="flex items-start space-x-2 text-sm p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+                              <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                              <div class="flex-1">
+                                  <p class="text-gray-800 dark:text-gray-200">${event.message}</p>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400">${event.time_ago}</p>
+                              </div>
+                          </div>
+                      `).join("");
+                  } else {
+                      feedContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No recent activity</p>';
+                  }
+              })
+              .catch(error => console.error("Error fetching activity feed:", error));
+      }
+
+      function animateCounter(elementId, targetValue) {
+          const element = document.getElementById(elementId);
+          const currentValue = parseInt(element.textContent) || 0;
+          const duration = 1000; // 1 second
+          const steps = 20;
+          const stepDuration = duration / steps;
+          const increment = (targetValue - currentValue) / steps;
+
+          let current = currentValue;
+          let step = 0;
+
+          const interval = setInterval(() => {
+              step++;
+              current += increment;
+              element.textContent = Math.round(current).toLocaleString();
+
+              if (step >= steps) {
+                  element.textContent = targetValue.toLocaleString();
+                  clearInterval(interval);
+              }
+          }, stepDuration);
+      }
+
+      // Initial load
+      updateLiveStats();
+      updateActivityFeed();
+
+      // Update every 30 seconds
+      setInterval(updateLiveStats, 30000);
+      setInterval(updateActivityFeed, 30000);
   </script>
 {% endblock extra_js %}

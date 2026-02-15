@@ -28,6 +28,7 @@ from .models import (
     ForumTopic,
     Goods,
     LearningStreak,
+    LiveActivityEvent,
     MembershipPlan,
     MembershipSubscriptionEvent,
     Notification,
@@ -889,3 +890,12 @@ class VideoRequestAdmin(admin.ModelAdmin):
     list_display = ("title", "status", "category", "requester", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "requester__username")
+
+
+@admin.register(LiveActivityEvent)
+class LiveActivityEventAdmin(admin.ModelAdmin):
+    list_display = ("event_type", "user", "message", "location", "created_at")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("user__username", "message", "location")
+    readonly_fields = ("created_at",)
+    date_hierarchy = "created_at"
