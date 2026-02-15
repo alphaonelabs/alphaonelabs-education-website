@@ -679,6 +679,31 @@
             <p class="text-center text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
           {% endif %}
         </div>
+        <!-- Meetups Section -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 class="text-xl font-semibold mb-4">
+            <i class="fa-solid fa-video mr-2"></i>
+            Meetups and Webinars
+          </h2>
+          <ul class="space-y-4">
+            {% for meetup in meetups %}
+              <li class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ meetup.title }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ meetup.date }}</p>
+                <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
+              </li>
+            {% endfor %}
+          </ul>
+          <a href="{% url 'create_meetup' %}"
+             class="mt-4 inline-block bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+            Create a Meetup
+          </a>
+          <a href="{% url 'meetup_list' %}"
+             class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-shadow shadow-md">
+            View Upcoming Meetups
+          </a>
+        </div>
         <!-- Educational Videos -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <h2 class="text-xl font-semibold flex flex-col items-start gap-1">
