@@ -50,19 +50,31 @@ ALLOWED_ATTRIBUTES = {
     "code": ["class"],
 }
 
+ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
+
 
 @register.filter
-def markdown(text):
+def markdown(text: str) -> str:
     """Convert markdown text to sanitized HTML.
-
+    
     Uses bleach to sanitize the HTML output from markdownify,
     preventing XSS attacks while preserving safe markdown formatting.
+    
+    Args:
+        text (str): The markdown text to convert.
+        
+    Returns:
+        str: Sanitized HTML string marked as safe.
     """
+    if not isinstance(text, str):
+        return ""
+
     html = markdownify(text)
     clean_html = bleach.clean(
         html,
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
         strip=True,
     )
     return mark_safe(clean_html)

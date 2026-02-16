@@ -14,19 +14,25 @@ class MarkdownFilterSanitizationTests(TestCase):
         result = markdown('<script>alert("XSS")</script>')
         self.assertNotIn("<script", result)
         self.assertNotIn("</script>", result)
-        # Content remains as text, which is safe
-        # self.assertNotIn("alert", result)
+        
+        # Content remains as text, which is safe.
+        # Verify that the alert call is present but inert (no script tags).
+        self.assertIn('alert("XSS")', result)
 
     def test_img_onerror_is_stripped(self):
         """Event handler attributes on img tags must be removed."""
         result = markdown('<img src="x" onerror="alert(1)">')
         self.assertNotIn("onerror", result)
-        # self.assertNotIn("alert", result)
+        # Verify alert content is stripped (attribute value usually removed completely or sanitized)
+        # Bleach behavior on attributes: removes the attribute entirely.
+        self.assertIn('<img src="x">', result)
 
     def test_javascript_protocol_in_link_is_stripped(self):
         """javascript: protocol in href must be removed or neutralized."""
         result = markdown('<a href="javascript:alert(1)">click</a>')
         self.assertNotIn("javascript:", result)
+        # Verify the link remains but without the dangerous href
+        self.assertIn("<a>click</a>", result)
 
     def test_iframe_is_stripped(self):
         """iframe tags must be completely removed."""
@@ -38,7 +44,7 @@ class MarkdownFilterSanitizationTests(TestCase):
         """Inline event handlers must be removed."""
         result = markdown('<div onmouseover="alert(1)">hover me</div>')
         self.assertNotIn("onmouseover", result)
-        # self.assertNotIn("alert", result)
+        self.assertIn("<div>hover me</div>", result)
 
     def test_style_tag_is_stripped(self):
         """Style tags must be removed."""
@@ -50,8 +56,19 @@ class MarkdownFilterSanitizationTests(TestCase):
         text = '# Hello\n\nSome text <script>alert("XSS")</script> more text'
         result = markdown(text)
         self.assertNotIn("<script", result)
+        self.assertIn('alert("XSS")', result)  # Inert text remains
         self.assertIn("Hello", result)
         self.assertIn("Some text", result)
+
+    def test_none_input(self):
+        """None input should return empty string."""
+        result = markdown(None)
+        self.assertEqual(result, "")
+
+    def test_non_string_input(self):
+        """Non-string input (e.g. integer) should return empty string."""
+        result = markdown(123)
+        self.assertEqual(result, "")
 
     # --- Valid markdown preservation tests ---
 
