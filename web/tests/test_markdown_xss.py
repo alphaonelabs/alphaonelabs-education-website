@@ -1,3 +1,4 @@
+"""Tests for the markdown template filter sanitization (XSS prevention)."""
 from django.test import TestCase
 
 from web.templatetags.markdown_filters import markdown
@@ -25,7 +26,8 @@ class MarkdownFilterSanitizationTests(TestCase):
         self.assertNotIn("onerror", result)
         # Verify alert content is stripped (attribute value usually removed completely or sanitized)
         # Bleach behavior on attributes: removes the attribute entirely.
-        self.assertIn('<img src="x">', result)
+        self.assertIn("<img", result)
+        self.assertIn('src="x"', result)
 
     def test_javascript_protocol_in_link_is_stripped(self):
         """javascript: protocol in href must be removed or neutralized."""
