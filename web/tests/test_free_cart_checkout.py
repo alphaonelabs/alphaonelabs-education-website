@@ -170,8 +170,8 @@ class FreeCartCheckoutTest(TestCase):
         self.assertIsNotNone(enrollment2)
         self.assertEqual(enrollment1.status, "approved")
         self.assertEqual(enrollment2.status, "approved")
-        self.assertIsNone(enrollment1.payment_intent_id)
-        self.assertIsNone(enrollment2.payment_intent_id)
+        self.assertEqual(enrollment1.payment_intent_id, "")
+        self.assertEqual(enrollment2.payment_intent_id, "")
 
         # Verify cart was cleared
         cart.refresh_from_db()
