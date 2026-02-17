@@ -130,7 +130,7 @@
                 <button type="submit"
                         id="submit-button"
                         class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
-                  <i class="fas fa-credit-card mr-2"></i>
+                  <i id="submit-icon" class="fas fa-credit-card mr-2"></i>
                   <span id="button-text">Checkout</span>
                   <span id="spinner" class="hidden ml-2">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -164,6 +164,7 @@
         });
 
         let stripe;
+        let isFreeCheckout = false;
         try {
             console.log('[Page Load] Starting cart checkout initialization');
 
@@ -198,6 +199,28 @@
                 console.log('[Initialize] Fetching payment intent from:', "{% url 'create_cart_payment_intent' %}");
                 const response = await fetch("{% url 'create_cart_payment_intent' %}");
                 const data = await response.json();
+
+                if (data.free) {
+                    console.log('[Initialize] Free checkout detected');
+                    isFreeCheckout = true;
+                    
+                    // Hide payment element
+                    const paymentElement = document.getElementById("payment-element");
+                    if (paymentElement) paymentElement.style.display = "none";
+                    
+                    // Update button text
+                    const btnText = document.getElementById("button-text");
+                    if (btnText) btnText.textContent = "Complete Enrollment";
+
+                    // Hide the credit card icon for free checkout
+                    const submitIcon = document.getElementById("submit-icon");
+                    if (submitIcon) {
+                        submitIcon.style.display = 'none';
+                    }
+                    
+                    return;
+                }
+
                 console.log('[Initialize] Payment intent response:', {
                     status: response.status,
                     hasClientSecret: !!data.clientSecret,
@@ -255,6 +278,47 @@
                 return_url: window.location.origin + "{% url 'checkout_success' %}"
             };
             console.log('[Submit] Return URL:', confirmParams.return_url);
+
+            if (isFreeCheckout) {
+                console.log('[Submit] Processing free checkout');
+                
+                // Validate email if guest
+                if (!isAuthenticated) {
+                    const emailInput = document.getElementById('email');
+                    if (!emailInput || !emailInput.value) {
+                         const messageDiv = document.querySelector("#payment-message");
+                         messageDiv.textContent = "Please enter your email address.";
+                         messageDiv.classList.add("text-red-500");
+                         setLoading(false);
+                         return;
+                    }
+                }
+                
+                // Validate shipping address if fields are present (implies has_goods)
+                const addressInput = document.getElementById('address');
+                if (addressInput) {
+                    const requiredFields = ['address', 'city', 'state', 'postal_code', 'country'];
+                    let missing = false;
+                    requiredFields.forEach(fieldId => {
+                        const el = document.getElementById(fieldId);
+                        if (!el || !el.value.trim()) {
+                            missing = true;
+                        }
+                    });
+                    
+                    if (missing) {
+                         const messageDiv = document.querySelector("#payment-message");
+                         messageDiv.textContent = "Please fill in all shipping address fields.";
+                         messageDiv.classList.add("text-red-500");
+                         setLoading(false);
+                         return;
+                    }
+                }
+
+                // Allow form submission to proceed
+                document.getElementById('checkout-form').submit();
+                return;
+            }
 
             if (!isAuthenticated) {
                 const emailInput = document.getElementById('email');
