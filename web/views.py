@@ -2810,9 +2810,7 @@ def free_cart_checkout(request):
     for item in cart.items.all():
         if item.course:
             # Create enrollment for free course
-            enrollment = Enrollment.objects.create(
-                student=user, course=item.course, status="approved", payment_intent_id=None
-            )
+            enrollment = Enrollment.objects.create(student=user, course=item.course, status="approved")
             enrollments.append(enrollment)
 
             # Send notifications
@@ -2821,9 +2819,7 @@ def free_cart_checkout(request):
 
         elif item.session:
             # Process individual session enrollments
-            session_enrollment = SessionEnrollment.objects.create(
-                student=user, session=item.session, status="approved", payment_intent_id=None
-            )
+            session_enrollment = SessionEnrollment.objects.create(student=user, session=item.session, status="approved")
             session_enrollments.append(session_enrollment)
 
         elif item.goods:
