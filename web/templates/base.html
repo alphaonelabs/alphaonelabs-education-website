@@ -153,16 +153,16 @@
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden {% if user.is_authenticated %}user-authenticated{% endif %}">
     <header class="w-full bg-teal-600 dark:bg-teal-800 text-white shadow-md">
-      <div class="max-w-[90rem] mx-auto px-4 md:px-6 flex items-center justify-between h-[70px] relative gap-2">
+      <div class="max-w-[90rem] mx-auto px-4 md:px-6 flex items-center justify-between h-[70px] relative gap-4">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}"
-           class="flex flex-1 min-w-[150px] max-w-[50%] items-center space-x-2">
+           class="flex items-center space-x-2 flex-shrink-0">
           <img src="{% static 'images/logo.png' %}"
                alt="Alpha One Labs Logo"
                height="40"
                width="40"
-               class="h-10 w-10" />
-          <span class="text-xl font-bold text-white ">Alpha One Labs</span>
+               class="h-10 w-10 flex-shrink-0" />
+          <span class="text-xl font-bold text-white whitespace-nowrap">Alpha One Labs</span>
         </a>
         <!-- Mobile Menu Button -->
         <button class="md:hidden p-2 hover:bg-teal-700 rounded-lg"
@@ -170,12 +170,12 @@
           <i class="fas fa-bars text-xl"></i>
         </button>
         <!-- Nav and additional actions -->
-        <nav class="hidden md:flex items-center space-x-3">
+        <nav class="hidden md:flex items-center space-x-4 flex-1 justify-between">
           <!-- Main navigation links with dropdowns -->
-          <div class="flex space-x-2 items-center">
+          <div class="flex space-x-4 items-center">
             <!-- LEARN Dropdown -->
             <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+              <button class="flex items-center space-x-1 text-white hover:text-teal-50 hover:bg-teal-700 rounded-lg px-3 py-2 focus:outline-none transition-all duration-200">
                 <span class="font-medium">LEARN</span>
                 <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
               </button>
@@ -222,7 +222,7 @@
             </div>
             <!-- COMMUNITY Dropdown -->
             <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+              <button class="flex items-center space-x-1 text-white hover:text-teal-50 hover:bg-teal-700 rounded-lg px-3 py-2 focus:outline-none transition-all duration-200">
                 <span class="font-medium">COMMUNITY</span>
                 <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
               </button>
@@ -277,7 +277,7 @@
             </div>
             <!-- RESOURCES Dropdown -->
             <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+              <button class="flex items-center space-x-1 text-white hover:text-teal-50 hover:bg-teal-700 rounded-lg px-3 py-2 focus:outline-none transition-all duration-200">
                 <span class="font-medium">RESOURCES</span>
                 <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
               </button>
@@ -315,7 +315,7 @@
             </div>
             <!-- ABOUT Dropdown -->
             <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+              <button class="flex items-center space-x-1 text-white hover:text-teal-50 hover:bg-teal-700 rounded-lg px-3 py-2 focus:outline-none transition-all duration-200">
                 <span class="font-medium">ABOUT</span>
                 <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
               </button>
@@ -351,24 +351,25 @@
               <input type="text"
                      name="q"
                      placeholder="What do you want to learn?"
-                     class="rounded-full w-[250px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-700" />
+                     class="rounded-full w-[250px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-700" />
               <button type="submit"
-                      class="absolute right-3 top-2 text-gray-500 dark:text-gray-300">
+                      class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-300">
                 <i class="fas fa-search"></i>
               </button>
             </form>
           </div>
-          <!-- Messaging Button -->
-          <a href="{% url 'inbox' %}"
-             title="Messages"
-             class="flex items-center p-2 hover:bg-teal-700 rounded-lg">
-            <i class="fas fa-comments text-xl"></i>
-          </a> <!-- Language and Dark Mode -->
-          <div class="flex items-center space-x-2">
+          <!-- Utility Icons -->
+          <div class="flex items-center space-x-1">
+            <!-- Messaging Button -->
+            <a href="{% url 'inbox' %}"
+               title="Messages"
+               class="flex items-center p-2 hover:bg-teal-700 rounded-lg text-white">
+              <i class="fas fa-comments text-xl"></i>
+            </a>
             <!-- Cart Icon -->
             <a href="{% url 'cart_view' %}"
-               class="relative hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
-              <i class="fa-solid fa-shopping-cart"></i>
+               class="relative flex items-center p-2 hover:bg-teal-700 rounded-lg text-white">
+              <i class="fa-solid fa-shopping-cart text-xl"></i>
               {% if request.user.cart.item_count > 0 or request.session.session_key and request.session.session_key|get_cart_item_count > 0 %}
                 <span class="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {% if request.user.is_authenticated %}
@@ -381,8 +382,8 @@
             </a>
             <!-- New Notification Button for Invitations -->
             <a href="{% url 'user_invitations' %}"
-               class="relative hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
-              <i class="fas fa-bell"></i>
+               class="relative flex items-center p-2 hover:bg-teal-700 rounded-lg text-white">
+              <i class="fas fa-bell text-xl"></i>
               {% if pending_invites_count %}
                 <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 flex items-center justify-center text-white text-xs">
                   {{ pending_invites_count }}
@@ -390,9 +391,9 @@
               {% endif %}
             </a>
             <div class="relative">
-              <button class="focus:outline-none hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg"
+              <button class="focus:outline-none flex items-center p-2 hover:bg-teal-700 rounded-lg text-white"
                       onclick="toggleLanguageDropdown()">
-                <i class="fa-solid fa-globe"></i>
+                <i class="fa-solid fa-globe text-xl"></i>
               </button>
               <!-- Language dropdown content -->
               <div id="language-dropdown"
@@ -433,10 +434,10 @@
                 </form>
               </div>
             </div>
-            <button class="focus:outline-none flex items-center hover:underline p-2 rounded-lg hover:bg-teal-700 transition-colors"
+            <button class="focus:outline-none flex items-center p-2 rounded-lg hover:bg-teal-700 transition-colors text-white"
                     title="Switch to Dark Mode"
                     onclick="toggleDarkMode()">
-              <i id="darkModeIcon" class="fas fa-moon"></i>
+              <i id="darkModeIcon" class="fas fa-moon text-xl"></i>
             </button>
           </div>
           <!-- Auth Buttons -->
@@ -521,14 +522,14 @@
           {% else %}
             <div class="flex items-center space-x-2">
               <a href="{% url 'account_login' %}"
-                 class="hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
-                <i class="fa-solid fa-right-to-bracket mr-1"></i>
-                <span class="hidden sm:inline">Login</span>
+                 class="flex items-center px-4 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg font-medium transition duration-200">
+                <span>Login</span>
+                <i class="fas fa-arrow-right ml-2"></i>
               </a>
               <a href="{% url 'account_signup' %}"
-                 class="px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold flex items-center">
+                 class="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold flex items-center transition duration-200">
                 <i class="fa-solid fa-user-plus mr-2"></i>
-                <span class="hidden sm:inline">Signup</span>
+                <span>Signup</span>
               </a>
             </div>
           {% endif %}
