@@ -84,7 +84,7 @@
           <!-- Course Card 1 -->
           {% for course in featured_courses %}
             <!-- Course Card -->
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-300 hover:shadow-lg transition-all duration-200 cursor-pointer" onclick="window.location.href='{% url 'course_detail' course.slug %}'">
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if course.image %}
                   <a href="{% url 'course_detail' course.slug %}">
@@ -189,10 +189,11 @@
                   Invite Only
                 </div>
               {% else %}
-                <form method="post" action="{% url 'add_course_to_cart' course.id %}">
+                <form method="post" action="{% url 'add_course_to_cart' course.id %}" onclick="event.stopPropagation();">
                   {% csrf_token %}
                   <button type="submit"
-                          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center">
+                          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center"
+                          onclick="event.stopPropagation();">
                     <i class="fas fa-cart-plus mr-2"></i>
                     Add to Cart
                   </button>
