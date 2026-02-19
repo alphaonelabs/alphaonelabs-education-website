@@ -90,18 +90,18 @@
                  aria-label="{{ course.title }}"></a>
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if course.image %}
-                  <a href="{% url 'course_detail' course.slug %}">
+                  <a href="{% url 'course_detail' course.slug %}" aria-hidden="true">
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                          height="300"
                          width="300" />
                   </a>
                 {% else %}
-                  <a href="{% url 'course_detail' course.slug %}">
+                  <a href="{% url 'course_detail' course.slug %}" aria-hidden="true">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                          height="300"
                          width="300" />
                   </a>
@@ -111,7 +111,8 @@
               <div class="mb-3">
                 <h3 class="text-lg font-semibold h-14 flex items-start">
                   <a href="{% url 'course_detail' course.slug %}"
-                     class="hover:text-orange-500 transition-colors duration-200 line-clamp-2">{{ course.title }}</a>
+                     class="hover:text-orange-500 transition-colors duration-200 line-clamp-2"
+                     aria-hidden="true">{{ course.title }}</a>
                 </h3>
                 <div class="flex items-center justify-between text-sm">
                   <span class="font-medium text-teal-600 dark:text-teal-400">{{ course.subject }}</span>
