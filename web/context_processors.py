@@ -1,7 +1,10 @@
+import json
 import os
 from datetime import datetime
+from typing import Dict
 
 from django.conf import settings
+from django.http import HttpRequest
 
 
 def last_modified(request):
@@ -23,9 +26,7 @@ def invitation_notifications(request):
     return {}
 
 
-def available_locales(request):
+def available_locales(request: HttpRequest) -> Dict[str, str]:
     """Expose available locales from Django settings to the template as JSON."""
-    import json
-
     locales = [lang_code for lang_code, _ in settings.LANGUAGES]
     return {"available_locales": json.dumps(locales)}
