@@ -714,18 +714,21 @@
         </div>
         <!-- Educational Videos -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
-          <h2 class="text-xl font-semibold flex items-center justify-between">
+          <h2 class="text-xl font-semibold flex flex-col items-start gap-1">
             <div class="flex items-center">
-              <span class="mr-2">🎬</span> Educational Videos
+              <span class="mr-2 w-6 inline-flex items-center justify-center">🎬</span>
+              <span>Educational Videos</span>
             </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-              <i class="fas fa-video mr-1"></i>
+            <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center whitespace-nowrap">
+              <span class="mr-2 w-6 inline-flex items-center justify-center">
+                <i class="fas fa-video"></i>
+              </span>
               <span>{{ video_count|default:"0" }} videos</span>
             </div>
           </h2>
           <div class="col-span-full">
             <div class="pt-4 text-center">
-              <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg mx-auto">
+              <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg text-left">
                 Discover a wide range of educational videos shared by our community of teachers and learners.
                 From science and technology to arts and languages, find videos that help you learn new skills and concepts.
               </p>
@@ -738,16 +741,16 @@
                       class="flex flex-col gap-3">
                   {% csrf_token %}
                   <!-- Video URL + fetch‑title button -->
-                  <div class="flex gap-2">
+                  <div class="flex flex-col sm:flex-row gap-2 w-full">
                     <input type="url"
                            id="video-url"
                            name="video_url"
                            placeholder="Paste YouTube URL here"
                            required
-                           class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500" />
+                           class="w-full sm:flex-1 min-w-0 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500" />
                     <button type="button"
                             id="fetch-title-btn"
-                            class="bg-teal-300 hover:bg-teal-400 text-white px-3 py-2 rounded-lg transition">
+                            class="bg-teal-300 hover:bg-teal-400 text-white px-3 py-2 rounded-lg transition w-full sm:w-auto flex items-center justify-center">
                       <i class="fas fa-search"></i>
                     </button>
                   </div>
@@ -760,16 +763,16 @@
                   <!-- Hidden description (filled by JS) -->
                   <input type="hidden" id="video-description" name="description" value="" />
                   <!-- Category + submit -->
-                  <div class="flex gap-2">
+                  <div class="flex flex-col sm:flex-row gap-2 w-full">
                     <select id="video-category"
                             name="category"
                             required
-                            class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+                            class="w-full sm:flex-1 min-w-0 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
                       <option value="">Select a category</option>
                       {% for subject in subjects %}<option value="{{ subject.id }}">{{ subject.name }}</option>{% endfor %}
                     </select>
                     <button type="submit"
-                            class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
+                            class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center justify-center w-full sm:w-auto">
                       <i class="fas fa-plus mr-2"></i> Add
                     </button>
                   </div>
@@ -777,15 +780,15 @@
                   <div id="quick-add-message" class="text-sm hidden"></div>
                 </form>
               </div>
-              <div class="mt-4 flex justify-center gap-4">
+              <div class="mt-4 flex flex-col sm:flex-row justify-center gap-4 w-full">
                 {% if user.is_authenticated %}
                   <a href="{% url 'upload_educational_video' %}"
-                     class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+                     class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center justify-center w-full sm:w-auto">
                     <i class="fas fa-upload mr-2"></i> Upload
                   </a>
                 {% endif %}
                 <a href="{% url 'educational_videos_list' %}"
-                   class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+                   class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center justify-center w-full sm:w-auto">
                   <i class="fas fa-play-circle mr-2"></i> Browse
                 </a>
               </div>
@@ -1436,4 +1439,4 @@
           });
       });
   </script>
-{% endblock %}
+{% endblock extra_js %}

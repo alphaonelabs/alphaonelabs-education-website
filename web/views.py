@@ -2754,6 +2754,10 @@ def create_cart_payment_intent(request):
     if not cart.items.exists():
         return JsonResponse({"error": "Cart is empty"}, status=400)
 
+    # Handle free cart (all items are free courses)
+    if cart.total == 0:
+        return JsonResponse({"free_cart": True, "message": "Cart contains only free items"})
+
     try:
         # Create a PaymentIntent with the cart total
         intent = stripe.PaymentIntent.create(
@@ -2768,6 +2772,86 @@ def create_cart_payment_intent(request):
         return JsonResponse({"clientSecret": intent.client_secret})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=403)
+
+
+@login_required
+def free_cart_checkout(request):
+    """Handle checkout for cart with only free items."""
+    if request.method != "POST":
+        messages.error(request, "Invalid request method.")
+        return redirect("cart_view")
+
+    cart = get_or_create_cart(request)
+
+    if not cart.items.exists():
+        messages.error(request, "Cart is empty.")
+        return redirect("cart_view")
+
+    # Verify that cart total is 0 (all items are free)
+    if cart.total != 0:
+        messages.error(request, "Cart contains paid items. Please use regular checkout.")
+        return redirect("cart_view")
+
+    user = request.user
+    enrollments = []
+    session_enrollments = []
+    goods_items = []
+
+    # Create the Order
+    order = Order.objects.create(
+        user=user,
+        total_price=0,
+        status="completed",
+        shipping_address=None,
+        terms_accepted=True,
+    )
+
+    # Process enrollments
+    for item in cart.items.all():
+        if item.course:
+            # Create enrollment for free course
+            enrollment = Enrollment.objects.create(student=user, course=item.course, status="approved")
+            enrollments.append(enrollment)
+
+            # Send notifications
+            send_enrollment_confirmation(enrollment)
+            notify_teacher_new_enrollment(enrollment)
+
+        elif item.session:
+            # Process individual session enrollments
+            session_enrollment = SessionEnrollment.objects.create(student=user, session=item.session, status="approved")
+            session_enrollments.append(session_enrollment)
+
+        elif item.goods:
+            # Free goods (price = 0)
+            goods_items.append(item)
+            OrderItem.objects.create(
+                order=order,
+                goods=item.goods,
+                quantity=1,
+                price_at_purchase=0,
+                discounted_price_at_purchase=0,
+            )
+
+    # Clear the cart
+    cart.items.all().delete()
+
+    # Render the receipt page
+    return render(
+        request,
+        "cart/receipt.html",
+        {
+            "payment_intent_id": None,
+            "order_date": timezone.now(),
+            "user": user,
+            "enrollments": enrollments,
+            "session_enrollments": session_enrollments,
+            "goods_items": goods_items,
+            "total": 0,
+            "order": order,
+            "shipping_address": None,
+        },
+    )
 
 
 def checkout_success(request):
@@ -3498,6 +3582,8 @@ def message_teacher(request, teacher_id):
                 "sender_name": sender_name,
                 "sender_email": sender_email,
                 "message": original_message,
+                "inbox_url": request.build_absolute_uri(reverse("inbox")),
+                "messaging_dashboard_url": request.build_absolute_uri(reverse("messaging_dashboard")),
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 
