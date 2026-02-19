@@ -1,13 +1,12 @@
 import json
 import os
 from datetime import datetime
-from typing import Dict
 
 from django.conf import settings
 from django.http import HttpRequest
 
 
-def last_modified(request):
+def last_modified(_request: HttpRequest):
     """Add last_modified timestamp to the global template context."""
     try:
         # Use the project's root directory modification time
@@ -26,7 +25,7 @@ def invitation_notifications(request):
     return {}
 
 
-def available_locales(request: HttpRequest) -> Dict[str, str]:
+def available_locales(_request: HttpRequest) -> dict[str, str]:
     """Expose available locales from Django settings to the template as JSON."""
     locales = [lang_code for lang_code, _ in settings.LANGUAGES]
     return {"available_locales": json.dumps(locales)}
