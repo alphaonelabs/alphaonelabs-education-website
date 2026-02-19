@@ -6,7 +6,7 @@ from django.conf import settings
 from django.http import HttpRequest
 
 
-def last_modified(_request: HttpRequest):
+def last_modified(_request: HttpRequest) -> dict[str, datetime | str]:
     """Add last_modified timestamp to the global template context."""
     try:
         # Use the project's root directory modification time
