@@ -83,6 +83,7 @@ from .forms import (
     InviteStudentForm,
     LearnForm,
     LinkGradeForm,
+    MeetupForm,
     MemeForm,
     MessageTeacherForm,
     NotificationPreferencesForm,
@@ -138,6 +139,8 @@ from .models import (
     GradeableLink,
     LearningStreak,
     LinkGrade,
+    Meetup,
+    MeetupRegistration,
     MembershipPlan,
     MembershipSubscriptionEvent,
     Meme,
@@ -4388,6 +4391,147 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get_object(self):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
+
+
+def meetup_list(request: HttpRequest) -> HttpResponse:
+    meetups = Meetup.objects.select_related("creator").all().order_by("-created_at")
+    # Add annotation for user registration status when authenticated
+    if request.user.is_authenticated:
+        from django.db.models import Exists, OuterRef
+
+        meetups = meetups.annotate(
+            user_registered=Exists(
+                MeetupRegistration.objects.filter(
+                    meetup=OuterRef("pk"),
+                    user=request.user,
+                )
+            )
+        )
+    paginator = Paginator(meetups, 10)  # Show 10 meetups per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    return render(
+        request,
+        "web/meetup_list.html",
+        {
+            "page_obj": page_obj,
+        },
+    )
+
+
+@login_required
+def create_meetup(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = MeetupForm(request.POST)
+        if form.is_valid():
+            meetup = form.save(commit=False)
+            meetup.creator = request.user
+            # Generate a unique slug
+            base_slug = slugify(meetup.title)
+            slug = base_slug
+            counter = 1
+
+            while Meetup.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            meetup.slug = slug
+            meetup.save()
+            return redirect("meetup_list")
+        else:
+            # Add error message when form validation fails
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = MeetupForm()
+    return render(request, "web/create_meetup.html", {"form": form})
+
+
+@login_required
+def edit_meetup(request: HttpRequest, slug: str) -> HttpResponse:
+    meetup = get_object_or_404(Meetup, slug=slug)
+    if not meetup.can_edit(request.user):
+        messages.error(request, "You don't have permission to edit this meetup.")
+        return redirect("meetup_detail", slug=slug)
+    if request.method == "POST":
+        form = MeetupForm(request.POST, instance=meetup)
+        if form.is_valid():
+            # Check if title has changed
+            if form.cleaned_data["title"] != meetup.title:
+                # Generate a new unique slug
+                base_slug = slugify(form.cleaned_data["title"])
+                new_slug = base_slug
+                counter = 1
+
+                while Meetup.objects.filter(slug=new_slug).exclude(pk=meetup.pk).exists():
+                    new_slug = f"{base_slug}-{counter}"
+                    counter += 1
+
+                # Update the slug
+                form.instance.slug = new_slug
+            form.save()
+            return redirect("meetup_detail", slug=form.instance.slug)
+        else:
+            # Add error message when form validation fails
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = MeetupForm(instance=meetup)
+    return render(request, "web/edit_meetup.html", {"form": form})
+
+
+@login_required
+def register_meetup(request: HttpRequest, slug: str) -> HttpResponse:
+    meetup = get_object_or_404(Meetup, slug=slug)
+
+    # Check if the user is already registered
+    if MeetupRegistration.objects.filter(meetup=meetup, user=request.user).exists():
+        messages.info(request, "You are already registered for this meetup.")
+        return redirect("meetup_detail", slug=meetup.slug)
+
+    # Check if the meetup has a capacity limit and if it's reached
+    registrations_count = MeetupRegistration.objects.filter(meetup=meetup).count()
+    if meetup.max_attendees and registrations_count >= meetup.max_attendees:
+        messages.error(request, "This meetup has reached its maximum capacity.")
+        return redirect("meetup_detail", slug=meetup.slug)
+
+    MeetupRegistration.objects.get_or_create(meetup=meetup, user=request.user)
+    messages.success(request, "You have successfully registered for this meetup.")
+    return redirect("meetup_detail", slug=meetup.slug)
+
+
+@login_required
+def unregister_meetup(request: HttpRequest, slug: str) -> HttpResponse:
+    meetup = get_object_or_404(Meetup, slug=slug)
+    registration = MeetupRegistration.objects.filter(meetup=meetup, user=request.user)
+    if registration.exists():
+        registration.delete()
+        messages.success(request, "You have been unregistered from this meetup.")
+    else:
+        messages.info(request, "You were not registered for this meetup.")
+    return redirect("meetup_detail", slug=meetup.slug)
+
+
+def meetup_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    meetup = get_object_or_404(Meetup, slug=slug)
+    registrations = MeetupRegistration.objects.filter(meetup=meetup).select_related("user")
+
+    # Check if current user is registered
+    user_is_registered = False
+    if request.user.is_authenticated:
+        user_is_registered = MeetupRegistration.objects.filter(meetup=meetup, user=request.user).exists()
+
+    # Check if current user can edit this meetup
+    can_edit = request.user.is_authenticated and meetup.can_edit(request.user)
+
+    return render(
+        request,
+        "web/meetup_detail.html",
+        {
+            "meetup": meetup,
+            "registrations": registrations,
+            "user_is_registered": user_is_registered,
+            "can_edit": can_edit,
+        },
+    )
 
 
 def success_story_list(request):
