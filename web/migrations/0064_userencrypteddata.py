@@ -1,5 +1,4 @@
 import django.db.models.deletion
-import django.utils.timezone
 from django.conf import settings
 from django.db import migrations, models
 
@@ -20,6 +19,8 @@ class Migration(migrations.Migration):
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("encrypted_email", web.encrypted_fields.EncryptedField(blank=True, default="")),
                 ("encrypted_username", web.encrypted_fields.EncryptedField(blank=True, default="")),
+                ("email_hash", models.CharField(blank=True, db_index=True, default="", max_length=64)),
+                ("username_hash", models.CharField(blank=True, db_index=True, default="", max_length=64)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (
                     "user",
