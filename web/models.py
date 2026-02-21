@@ -25,7 +25,7 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
-from web.encrypted_fields import EncryptedField
+from web.encrypted_fields import EncryptedField, make_hash
 from web.utils import calculate_and_update_user_streak
 
 
@@ -3181,7 +3181,8 @@ class VirtualClassroomWhiteboard(models.Model):
 
 class UserEncryptedData(models.Model):
     """
-    Shadow table that stores a Fernet-encrypted copy of the user's email and username.
+    Shadow table that stores a Fernet-encrypted copy of the user's email and username,
+    plus HMAC-SHA256 hashes of each for admin search lookups.
 
     This is the first step toward encrypting user PII.  Future work will replace the
     default Django User table with a custom model whose email / username fields are
@@ -3191,6 +3192,9 @@ class UserEncryptedData(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="encrypted_data")
     encrypted_email = EncryptedField(blank=True, default="")
     encrypted_username = EncryptedField(blank=True, default="")
+    # Deterministic HMAC-SHA256 digests used for exact-match lookups (e.g. admin search).
+    email_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    username_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -2,7 +2,7 @@ from cryptography.fernet import Fernet
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from web.encrypted_fields import EncryptedField
+from web.encrypted_fields import EncryptedField, make_hash
 from web.models import UserEncryptedData
 
 User = get_user_model()
@@ -61,6 +61,25 @@ class EncryptedFieldTests(TestCase):
 
 
 @override_settings(FIELD_ENCRYPTION_KEY=TEST_KEY)
+class MakeHashTests(TestCase):
+    """Unit tests for the make_hash helper."""
+
+    def test_deterministic(self):
+        """The same input always produces the same hash."""
+        self.assertEqual(make_hash("hello@example.com"), make_hash("hello@example.com"))
+
+    def test_different_inputs_different_hashes(self):
+        """Different inputs produce different hashes."""
+        self.assertNotEqual(make_hash("a@example.com"), make_hash("b@example.com"))
+
+    def test_returns_hex_string(self):
+        """Hash is a 64-character hex string (SHA-256 output)."""
+        result = make_hash("test")
+        self.assertEqual(len(result), 64)
+        int(result, 16)  # raises ValueError if not valid hex
+
+
+@override_settings(FIELD_ENCRYPTION_KEY=TEST_KEY)
 class UserEncryptedDataModelTests(TestCase):
     """Integration tests for UserEncryptedData model and its sync signal."""
 
@@ -95,19 +114,31 @@ class UserEncryptedDataModelTests(TestCase):
         enc = UserEncryptedData.objects.get(user=self.user)
         self.assertEqual(enc.encrypted_username, "enctest_user")
 
+    def test_email_hash_stored(self):
+        """email_hash should be the HMAC-SHA256 of the user's email."""
+        enc = UserEncryptedData.objects.get(user=self.user)
+        self.assertEqual(enc.email_hash, make_hash("enctest@example.com"))
+
+    def test_username_hash_stored(self):
+        """username_hash should be the HMAC-SHA256 of the user's username."""
+        enc = UserEncryptedData.objects.get(user=self.user)
+        self.assertEqual(enc.username_hash, make_hash("enctest_user"))
+
     def test_record_updated_on_user_email_change(self):
-        """Updating a user's email should update the encrypted copy."""
+        """Updating a user's email should update the encrypted copy and hash."""
         self.user.email = "new@example.com"
         self.user.save()
         enc = UserEncryptedData.objects.get(user=self.user)
         self.assertEqual(enc.encrypted_email, "new@example.com")
+        self.assertEqual(enc.email_hash, make_hash("new@example.com"))
 
     def test_record_updated_on_username_change(self):
-        """Updating a user's username should update the encrypted copy."""
+        """Updating a user's username should update the encrypted copy and hash."""
         self.user.username = "new_username"
         self.user.save()
         enc = UserEncryptedData.objects.get(user=self.user)
         self.assertEqual(enc.encrypted_username, "new_username")
+        self.assertEqual(enc.username_hash, make_hash("new_username"))
 
     def test_str_representation(self):
         """__str__ should include the user id."""

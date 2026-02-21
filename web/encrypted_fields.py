@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import models
@@ -9,6 +12,20 @@ def get_fernet():
     if isinstance(key, str):
         key = key.encode()
     return Fernet(key)
+
+
+def make_hash(value: str) -> str:
+    """Return a hex-encoded HMAC-SHA256 of *value* keyed with FIELD_ENCRYPTION_KEY.
+
+    The hash is deterministic so the same plaintext always produces the same
+    digest, allowing exact-match lookups in the database without revealing the
+    plaintext.  The key acts as a pepper so the hashes are not brute-forceable
+    without access to the application secret.
+    """
+    key = settings.FIELD_ENCRYPTION_KEY
+    if isinstance(key, str):
+        key = key.encode()
+    return hmac.new(key, value.encode(), hashlib.sha256).hexdigest()
 
 
 class EncryptedField(models.TextField):

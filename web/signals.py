@@ -4,6 +4,8 @@ from django.core.cache import cache
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
+from web.encrypted_fields import make_hash
+
 from .models import CourseProgress, Enrollment, LearningStreak, Session, SessionAttendance, UserEncryptedData
 from .utils import send_slack_message
 
@@ -81,5 +83,12 @@ def sync_user_encrypted_data(sender, instance, **kwargs):
         return
     UserEncryptedData.objects.update_or_create(
         user=instance,
-        defaults={"encrypted_email": instance.email, "encrypted_username": instance.username},
+        defaults={
+            "encrypted_email": instance.email,
+            "encrypted_username": instance.username,
+            "email_hash": make_hash(instance.email.strip()) if instance.email and instance.email.strip() else "",
+            "username_hash": (
+                make_hash(instance.username.strip()) if instance.username and instance.username.strip() else ""
+            ),
+        },
     )
