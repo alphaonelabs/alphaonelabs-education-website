@@ -116,6 +116,42 @@ The workflow has `contents: write` permission to:
 
 ## Other Workflows
 
+### Label Issues by Creation Date Workflow
+**File:** `.github/workflows/label-issues-by-date.yml`
+
+**Triggers:**
+- Daily at midnight UTC (scheduled)
+- Manual trigger via workflow_dispatch
+
+**Purpose:** Automatically labels issues with their creation date in YYYY-MM format (e.g., 2024-01, 2024-02).
+
+**Features:**
+- Processes all issues (both open and closed) in the repository
+- Creates date labels automatically if they don't exist
+- Uses color-coded labels based on the month
+- Skips issues that already have a date label
+- Skips pull requests (only processes issues)
+- Runs daily to label new issues automatically
+
+**How it works:**
+1. Fetches all issues from the repository
+2. Extracts the creation date of each issue
+3. Formats the date as YYYY-MM (e.g., 2024-12)
+4. Creates the label if it doesn't exist with a month-specific color
+5. Adds the label to the issue
+
+**Manual Trigger:**
+1. Go to the [Actions](../../actions) tab in GitHub
+2. Select "Label Issues by Creation Date" workflow
+3. Click "Run workflow"
+4. Click "Run workflow" button
+
+**Use Cases:**
+- Track when issues were created
+- Filter and organize issues by time period
+- Generate reports based on issue creation dates
+- Monitor issue trends over time
+
 ### Test Workflow
 **File:** `.github/workflows/test.yml`
 - Runs linting checks
