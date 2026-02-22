@@ -43,6 +43,9 @@ const outputEl = document.getElementById("output");
 const stdinEl  = document.getElementById("stdin-input");
 const langSel  = document.getElementById("language-select");
 
+// Track the currently active language
+let currentLanguage = "python";
+
 // Helper to detect if the editor contains unsaved (non-sample) code
 function hasUnsavedChanges() {
   const currentCode = editor.getValue();
@@ -65,9 +68,6 @@ function hasUnsavedChanges() {
 function updateEditorLanguage(language) {
   const config = languageConfig[language];
   if (config) {
-    // Always update syntax highlighting mode
-    editor.session.setMode(config.mode);
-
     // Only overwrite the editor contents if there are no unsaved changes,
     // or if the user explicitly confirms discarding their current code.
     if (hasUnsavedChanges()) {
@@ -78,11 +78,14 @@ function updateEditorLanguage(language) {
       );
 
       if (!confirmDiscard) {
-        // Preserve the current code while still keeping the updated syntax mode
+        // Revert the dropdown to the previously active language
+        langSel.value = currentLanguage;
         return;
       }
     }
 
+    currentLanguage = language;
+    editor.session.setMode(config.mode);
     editor.setValue(config.sample, -1); // -1 moves cursor to start
   }
 }
