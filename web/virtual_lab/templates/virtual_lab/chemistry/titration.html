@@ -74,5 +74,14 @@
   </div>
 {% endblock %}
 {% block extra_scripts %}
+  <script>
+      // Pass translated strings to JavaScript
+      window.translations = {
+          'acidic': '{% trans "Acidic" %}',
+          'neutral': '{% trans "Neutral" %}',
+          'basic': '{% trans "Basic" %}',
+          'solution_is': '{% trans "Solution is" %}'
+      };
+  </script>
   <script src="{% static 'virtual_lab/js/chemistry/titration.js' %}"></script>
 {% endblock %}

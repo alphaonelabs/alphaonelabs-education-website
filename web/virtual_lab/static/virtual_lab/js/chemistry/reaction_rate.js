@@ -25,14 +25,14 @@ function drawTestTube(c) {
 // Provides textual hints based on current conc
 function updateHint(c) {
   const hint = document.getElementById('hint');
-  if (c <= 0)                  hint.innerText = '{% trans "Reaction has completed!" %}';
-  else if (c <= initialConc/2) hint.innerText = '{% trans "Half-life reached." %}';
-  else                         hint.innerText = '{% trans "Reaction proceeding..." %}';
+  if (c <= 0)                  hint.innerText = window.translations.reaction_has_completed;
+  else if (c <= initialConc/2) hint.innerText = window.translations.half_life_reached;
+  else                         hint.innerText = window.translations.reaction_proceeding;
 }
 
-// Displays final “Reaction Complete” message
+// Displays final "Reaction Complete" message
 function displayProperty() {
-  document.getElementById('property').innerText = '{% trans "Reaction Complete" %}';
+  document.getElementById('property').innerText = window.translations.reaction_complete;
 }
 
 // Advances the reaction in small time steps

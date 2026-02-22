@@ -51,10 +51,10 @@ function updateHint(pH) {
 function displayProperty(pH) {
   const propEl = document.getElementById('property');
   let prop;
-  if (pH < 7)      prop = '{% trans "Acidic" %}';
-  else if (pH === 7) prop = '{% trans "Neutral" %}';
-  else              prop = '{% trans "Basic" %}';
-  propEl.innerText = `{% trans "Solution is" %} ` + prop;
+  if (pH < 7)      prop = window.translations.acidic;
+  else if (pH === 7) prop = window.translations.neutral;
+  else              prop = window.translations.basic;
+  propEl.innerText = window.translations.solution_is + ' ' + prop;
 }
 
 // Animate one drop

@@ -50,5 +50,14 @@
   </div>
 {% endblock %}
 {% block extra_scripts %}
+  <script>
+      // Pass translated strings to JavaScript
+      window.translations = {
+          'reaction_has_completed': '{% trans "Reaction has completed!" %}',
+          'half_life_reached': '{% trans "Half-life reached." %}',
+          'reaction_proceeding': '{% trans "Reaction proceeding..." %}',
+          'reaction_complete': '{% trans "Reaction Complete" %}'
+      };
+  </script>
   <script src="{% static 'virtual_lab/js/chemistry/reaction_rate.js' %}"></script>
 {% endblock %}

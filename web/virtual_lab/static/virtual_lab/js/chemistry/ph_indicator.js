@@ -29,9 +29,9 @@ function getColor(ph) {
 
 // 2. pH → property
 function getProperty(ph) {
-  if (ph < 7)   return '{% trans "Acidic" %}';
-  if (ph === 7) return '{% trans "Neutral" %}';
-                return '{% trans "Basic" %}';
+  if (ph < 7)   return window.translations.acidic;
+  if (ph === 7) return window.translations.neutral;
+                return window.translations.basic;
 }
 
 // Draw the main indicator rectangle + pH label
@@ -110,7 +110,7 @@ function updateUI(ph) {
   drawIndicator(ph);
   animateDrop(ph);
   hintEl.innerText = `🎉 Indicator shows ${getProperty(ph)}!`;
-  propEl.innerText = `{% trans "Solution is" %} ${getProperty(ph)}.`;
+  propEl.innerText = `${window.translations.solution_is} ${getProperty(ph)}.`;
   if (ph === 7) spawnConfetti();
 }
 
@@ -118,7 +118,7 @@ function updateUI(ph) {
 updateBtn.addEventListener('click', ()=>{
   let ph = parseFloat(phInput.value);
   if (isNaN(ph) || ph < 0 || ph > 14) {
-    hintEl.innerText = '{% trans "Please enter a valid pH between 0 and 14." %}';
+    hintEl.innerText = window.translations.please_enter_valid_ph;
     return;
   }
   updateUI(ph);
@@ -129,7 +129,7 @@ resetBtn.addEventListener('click', ()=>{
   dropCtx.clearRect(0,0,width,height);
   confCtx.clearRect(0,0,width,height);
   phInput.value = 7;
-  hintEl.innerText = '{% trans "Enter a pH value (0–14) and click Update to see the color change." %}';
+  hintEl.innerText = window.translations.enter_ph_instruction;
   propEl.innerText = '';
   drawIndicator(7);
 });

@@ -54,5 +54,16 @@
   </div>
 {% endblock %}
 {% block extra_scripts %}
+  <script>
+      // Pass translated strings to JavaScript
+      window.translations = {
+          'acidic': '{% trans "Acidic" %}',
+          'neutral': '{% trans "Neutral" %}',
+          'basic': '{% trans "Basic" %}',
+          'solution_is': '{% trans "Solution is" %}',
+          'please_enter_valid_ph': '{% trans "Please enter a valid pH between 0 and 14." %}',
+          'enter_ph_instruction': '{% trans "Enter a pH value (0–14) and click Update to see the color change." %}'
+      };
+  </script>
   <script src="{% static 'virtual_lab/js/chemistry/ph_indicator.js' %}"></script>
 {% endblock %}
