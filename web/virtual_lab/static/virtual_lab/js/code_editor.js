@@ -26,16 +26,16 @@ const languageConfig = {
   }
 };
 
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+
 // Bootstrap Ace
 const editor = ace.edit("editor");
 editor.setTheme("ace/theme/github");
-editor.session.setMode("ace/mode/python");
 editor.setOptions({
   fontSize: "14px",
   showPrintMargin: false,
-  wrap: true,
-  enableBasicAutocompletion: true,
-  enableLiveAutocompletion: true
+  wrap: true
 });
 
 const runBtn   = document.getElementById("run-btn");
@@ -43,12 +43,47 @@ const outputEl = document.getElementById("output");
 const stdinEl  = document.getElementById("stdin-input");
 const langSel  = document.getElementById("language-select");
 
+// Helper to detect if the editor contains unsaved (non-sample) code
+function hasUnsavedChanges() {
+  const currentCode = editor.getValue();
+  const normalizedCurrent = currentCode.trimEnd();
+
+  // Empty editor is treated as having no unsaved changes
+  if (!normalizedCurrent) {
+    return false;
+  }
+
+  // If the current code matches any sample (ignoring trailing whitespace), we treat it as not modified
+  const matchesAnySample = Object.values(languageConfig).some((config) => {
+    return config.sample.trimEnd() === normalizedCurrent;
+  });
+
+  return !matchesAnySample;
+}
+
 // Function to update editor mode and sample code based on selected language
 function updateEditorLanguage(language) {
   const config = languageConfig[language];
   if (config) {
+    // Always update syntax highlighting mode
     editor.session.setMode(config.mode);
-    editor.setValue(config.sample, -1); // -1 moves cursor to end
+
+    // Only overwrite the editor contents if there are no unsaved changes,
+    // or if the user explicitly confirms discarding their current code.
+    if (hasUnsavedChanges()) {
+      const confirmDiscard = window.confirm(
+        "You have code in the editor that differs from the default samples. " +
+        "Switching languages will replace it with example code for the selected language. " +
+        "Do you want to discard your current code?"
+      );
+
+      if (!confirmDiscard) {
+        // Preserve the current code while still keeping the updated syntax mode
+        return;
+      }
+    }
+
+    editor.setValue(config.sample, -1); // -1 moves cursor to start
   }
 }
 
@@ -95,3 +130,5 @@ runBtn.addEventListener("click", () => {
     runBtn.disabled = false;
   });
 });
+
+}); // End DOMContentLoaded
