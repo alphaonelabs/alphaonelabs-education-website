@@ -26,9 +26,9 @@ function drawTestTube(c) {
 function updateHint(c) {
   const hint = document.getElementById('hint');
   if (!hint) return; // Defensive check
-  
+
   const translations = window.translations || {}; // More robust null handling
-  
+
   if (c <= 0)                  hint.innerText = translations.reaction_has_completed || 'Reaction has completed!';
   else if (c <= initialConc/2) hint.innerText = translations.half_life_reached || 'Half-life reached.';
   else                         hint.innerText = translations.reaction_proceeding || 'Reaction proceeding...';
@@ -38,7 +38,7 @@ function updateHint(c) {
 function displayProperty() {
   const propEl = document.getElementById('property');
   if (!propEl) return; // Defensive check
-  
+
   const translations = window.translations || {}; // More robust null handling
   propEl.innerText = translations.reaction_complete || 'Reaction Complete';
 }

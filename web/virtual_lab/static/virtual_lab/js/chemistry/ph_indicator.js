@@ -30,7 +30,7 @@ function getColor(ph) {
 // 2. pH → property
 function getProperty(ph) {
   const translations = window.translations || {}; // More robust null handling
-  
+
   if (ph < 7)   return translations.acidic || 'Acidic';
   if (ph === 7) return translations.neutral || 'Neutral';
                 return translations.basic || 'Basic';
@@ -111,14 +111,15 @@ function updateConfetti() {
 function updateUI(ph) {
   drawIndicator(ph);
   animateDrop(ph);
-  
+
   const translations = window.translations || {}; // More robust null handling
   const indicatorShows = translations.indicator_shows || 'Indicator shows';
   const solutionIs = translations.solution_is || 'Solution is';
-  
-  if (hintEl) hintEl.innerText = `🎉 ${indicatorShows} ${getProperty(ph)}!`;
-  if (propEl) propEl.innerText = `${solutionIs} ${getProperty(ph)}.`;
-  
+  const propertyValue = getProperty(ph); // Cache result to avoid calling twice
+
+  if (hintEl) hintEl.innerText = `🎉 ${indicatorShows} ${propertyValue}!`;
+  if (propEl) propEl.innerText = `${solutionIs} ${propertyValue}.`;
+
   if (ph === 7) spawnConfetti();
 }
 
@@ -126,7 +127,7 @@ function updateUI(ph) {
 updateBtn.addEventListener('click', ()=>{
   let ph = parseFloat(phInput.value);
   const translations = window.translations || {}; // More robust null handling
-  
+
   if (isNaN(ph) || ph < 0 || ph > 14) {
     const errorMsg = translations.please_enter_valid_ph || 'Please enter a valid pH between 0 and 14.';
     if (hintEl) hintEl.innerText = errorMsg;
@@ -140,13 +141,13 @@ resetBtn.addEventListener('click', ()=>{
   dropCtx.clearRect(0,0,width,height);
   confCtx.clearRect(0,0,width,height);
   phInput.value = 7;
-  
+
   const translations = window.translations || {}; // More robust null handling
   const instructionMsg = translations.enter_ph_instruction || 'Enter a pH value (0–14) and click Update to see the color change.';
-  
+
   if (hintEl) hintEl.innerText = instructionMsg;
   if (propEl) propEl.innerText = '';
-  
+
   drawIndicator(7);
 });
 

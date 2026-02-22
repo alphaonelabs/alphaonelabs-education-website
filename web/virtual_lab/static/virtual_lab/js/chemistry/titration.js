@@ -51,14 +51,14 @@ function updateHint(pH) {
 function displayProperty(pH) {
   const propEl = document.getElementById('property');
   if (!propEl) return; // Defensive check
-  
+
   let prop;
   const translations = window.translations || {}; // More robust null handling
-  
+
   if (pH < 7)      prop = translations.acidic || 'Acidic';
   else if (pH === 7) prop = translations.neutral || 'Neutral';
   else              prop = translations.basic || 'Basic';
-  
+
   const solutionIs = translations.solution_is || 'Solution is';
   propEl.innerText = solutionIs + ' ' + prop;
 }
