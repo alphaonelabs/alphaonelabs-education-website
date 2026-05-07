@@ -32,7 +32,7 @@
         }
 
         // Debug flag
-        const DEBUG = true;
+        const DEBUG = false;
 
         // Logging helper
         function log(message) {
@@ -68,20 +68,30 @@
 
         function updateDarkModeIcon() {
             const isDark = document.documentElement.classList.contains('dark');
-            const icon = document.getElementById('darkModeIcon');
             log(`Updating icon. Dark mode is: ${isDark}`);
 
+            // Update desktop icon
+            const icon = document.getElementById('darkModeIcon');
             if (icon) {
                 icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
                 icon.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
                 log('Icon updated successfully');
-            } else {
-                log('Warning: Dark mode icon element not found');
+            }
+
+            // Update mobile icon
+            const mobileIcon = document.getElementById('darkModeIconMobile');
+            if (mobileIcon) {
+                mobileIcon.className = isDark ? 'fas fa-sun mr-2 text-teal-500' : 'fas fa-moon mr-2 text-teal-500';
             }
         }
 
-        // Initialize dark mode immediately and after DOM content loads
-        initializeDarkMode();
+        // Apply dark class immediately (before DOM loads) to prevent flash
+        const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
+        if (darkModeEnabled) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Update icon only after DOM is ready
         document.addEventListener('DOMContentLoaded', initializeDarkMode);
     </script>
     <!-- Font Awesome (Free CDN) -->
@@ -628,7 +638,7 @@
                     <a href="{% url 'surveys' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md ">
                       <i class="fas fa-square-poll-vertical mr-2 text-teal-500"></i>
-                      <span>Learning Requests</span>
+                      <span>Surveys</span>
                     </a>
                     <a href="{% url 'waiting_room_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
