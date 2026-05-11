@@ -8,13 +8,13 @@
   <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
     <header class="bg-white dark:bg-gray-800 shadow-sm">
-      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="container mx-auto px-4 py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <a href="{% url 'virtual_lab:virtual_lab_home' %}"
-           class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition">Alpha Science Lab</a>
-        <nav class="space-x-8 text-gray-700 dark:text-gray-300">
+           class="block text-2xl font-bold text-teal-600 dark:text-teal-300 hover:text-teal-700 dark:hover:text-teal-200 transition">Alpha Science Lab</a>
+        <nav class="flex w-full flex-wrap items-center gap-x-6 gap-y-3 text-gray-700 dark:text-gray-300 lg:w-auto lg:justify-end">
           <!-- Home Link -->
           <a href="{% url 'virtual_lab:virtual_lab_home' %}"
-             class="hover:text-gray-900 dark:hover:text-white transition focus:text-gray-900 dark:focus:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-800">{% trans "Home" %}</a>
+             class="whitespace-nowrap hover:text-gray-900 dark:hover:text-white transition focus:text-gray-900 dark:focus:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-300 dark:focus:ring-teal-400 dark:focus:ring-offset-gray-800">{% trans "Home" %}</a>
           {% for subject in virtual_lab_subjects %}
             <div class="relative group inline-block"
                  x-data="{ open: false }"
@@ -27,7 +27,7 @@
                  aria-haspopup="menu"
                  :aria-expanded="open ? 'true' : 'false'"
                  aria-controls="subject-menu-{{ forloop.counter }}"
-                 class="hover:text-gray-900 dark:hover:text-white transition focus:text-gray-900 dark:focus:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 dark:focus:ring-gray-300 dark:focus:ring-offset-gray-800">
+                 class="whitespace-nowrap hover:text-gray-900 dark:hover:text-white transition focus:text-gray-900 dark:focus:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-300 dark:focus:ring-teal-400 dark:focus:ring-offset-gray-800">
                 {{ subject.label }}
               </a>
               <div id="subject-menu-{{ forloop.counter }}"
@@ -47,7 +47,7 @@
             </div>
           {% endfor %}
           <a href="{% url 'virtual_lab:code_editor' %}"
-             class="hover:text-gray-900 dark:hover:text-white transition focus:text-gray-900 dark:focus:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-300 dark:focus:ring-teal-400 dark:focus:ring-offset-gray-800">{% trans "Code Editor" %}</a>
+             class="whitespace-nowrap hover:text-gray-900 dark:hover:text-white transition focus:text-gray-900 dark:focus:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-300 dark:focus:ring-teal-400 dark:focus:ring-offset-gray-800">{% trans "Code Editor" %}</a>
         </nav>
       </div>
     </header>
